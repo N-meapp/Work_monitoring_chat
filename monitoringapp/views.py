@@ -277,9 +277,10 @@ def add_contact(request):
 
 
 
+
 @never_cache
 def login_view(request):
-    # If user is already logged in, redirect to dashboard
+    # ✅ Already logged in → redirect
     if request.session.get("user_id") and request.session.get("position"):
         if request.session["position"] == "team_lead":
             return redirect("teamlead_dashboard")
@@ -293,32 +294,40 @@ def login_view(request):
 
         try:
             user = User.objects.get(username=username)
-            if user.password == password:
-                db_position = user.job_Position.lower().replace(" ", "_")
-                if db_position == position:
-                    # Mark user as active
-                    user.status = "active"
-                    user.last_login_time = timezone.now()
-                    user.save()
-
-                    # Save session
-                    request.session["user_id"] = user.id
-                    request.session["position"] = db_position
-                    request.session["login_time"] = str(timezone.now())
-
-                    # ✅ Redirect to dashboard to immediately show username in navbar
-                    if db_position == "team_lead":
-                        return redirect("teamlead_dashboard")
-                    else:
-                        return redirect("teammember_dashboard")
-
         except User.DoesNotExist:
             messages.error(request, "Invalid username or password")
+            return render(request, "user_login.html")
+
+        # ✅ Compare plain-text password
+        if user.password != password:
+            messages.error(request, "Invalid username or password")
+            return render(request, "user_login.html")
+
+        db_position = user.job_Position.lower().replace(" ", "_")
+        if db_position != position:
+            messages.error(request, "Incorrect position selected")
+            return render(request, "user_login.html")
+
+        # ✅ Mark user as active and save
+        user.status = "active"
+        user.last_login_time = timezone.now()
+        user.save()
+
+        # ✅ Store in session
+        request.session["user_id"] = user.id
+        request.session["position"] = db_position
+        request.session["login_time"] = str(timezone.now())
+
+        # ✅ Redirect to dashboard
+        if db_position == "team_lead":
+            return redirect("teamlead_dashboard")
+        else:
+            return redirect("teammember_dashboard")
 
     return render(request, "user_login.html")
 
 
-   
+
 def get_logged_in_user_api(request):
     if request.session.get("user_id"):
         try:
@@ -504,28 +513,25 @@ def teamlead_chat(request):
 
 
 
-
 def teammember_chat(request):
     user_id = request.session.get("user_id")
     if not user_id:
-        return redirect("login_view")  
+        return redirect("login_view")
 
-    current_user = User.objects.get(id=user_id)
+    current_user = get_object_or_404(User, id=user_id)
 
     users = list(User.objects.all())
-    users.sort(key=lambda u: 0 if u.id == current_user.id else 1)
+    users.sort(key=lambda u: (0 if u.id == current_user.id else 1, u.name.lower()))
 
     extra_contacts = ExtraContact.objects.all()
 
-    return render(request, 'teammember_chat.html', {
-        'current_user': current_user,   
-        'users': users,
-        'extra_contacts': extra_contacts,
-        'role': 'teammember',
-    })
-
-
-
+    context = {
+        "current_user": current_user,
+        "users": users,
+        "extra_contacts": extra_contacts,
+        "role": "teammember",
+    }
+    return render(request, "teammember_chat.html", context)
 
 
 

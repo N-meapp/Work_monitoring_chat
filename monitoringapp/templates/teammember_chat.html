@@ -1,6 +1,4 @@
 {% load static %}
-{% load tz %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -70,7 +68,6 @@
     <!-- Header -->
     <div class="flex items-center justify-between p-4 border-b border-gray-700">
       <h2 class="font-bold text-lg">Chats</h2>
-      
     </div>
 
     <!-- Search -->
@@ -82,63 +79,54 @@
 
     <!-- Dynamic User List -->
     <div id="user-list" class="flex-1 overflow-y-auto">
-   
-{% for user in users %}
-  <div onclick="openChat('{{ user.id }}',
-                          '{% if user.id == current_user.id %}Me{% else %}{{ user.name }}{% endif %}',
-                          '{{ user.phone }}',
-                          '{% if user.profile_image %}{{ user.profile_image.url }}{% endif %}')"
-       class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer">
+      {% for user in users %}
+      <div onclick="openChat('{{ user.id }}',
+                              '{% if user.id == current_user.id %}Me{% else %}{{ user.name }}{% endif %}',
+                              '{{ user.phone }}',
+                              '{% if user.profile_image %}{{ user.profile_image.url }}{% endif %}')"
+           class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer">
 
-    {% if user.profile_image %}
-      <img src="{{ user.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
-    {% else %}
-      <div class="w-10 h-10 rounded-full flex items-center justify-center text-white border border-white font-bold mr-3"
-           style="background-color: hsl({{ user.id|add:50|divisibleby:360 }}, 70%, 50%)">
-        {% if user.id == current_user.id %}
-          M
+        {% if user.profile_image %}
+          <img src="{{ user.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
         {% else %}
-          {{ user.name|first|upper }}
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-white border border-white font-bold mr-3">
+            {% if user.id == current_user.id %}
+              M
+            {% else %}
+              {{ user.name|first|upper }}
+            {% endif %}
+          </div>
         {% endif %}
+
+        <div>
+          {% if user.id == current_user.id %}
+            <p class="font-medium">Me</p>
+            <p class="text-gray-400 text-sm">{{ user.phone }}</p>
+          {% else %}
+            <p class="font-medium">{{ user.name }}</p>
+            <p class="text-gray-400 text-sm">{{ user.phone }}</p>
+          {% endif %}
+        </div>
       </div>
-    {% endif %}
-
-    <div>
-      {% if user.id == current_user.id %}
-        <p class="font-medium">Me</p>
-        <p class="text-gray-400 text-sm">{{ user.phone }}</p>
-      {% else %}
-        <p class="font-medium">{{ user.name }}</p>
-        <p class="text-gray-400 text-sm">{{ user.phone }}</p>
-      {% endif %}
-    </div>
-
-  </div>
-{% endfor %}
-
-
+      {% endfor %}
 
       <!-- Extra Contacts -->
       {% for contact in extra_contacts %}
         <div onclick="openChat('extra-{{ contact.id }}','{{ contact.name }}','{{ contact.phone }}','{% if contact.profile_image %}{{ contact.profile_image.url }}{% endif %}')"
              class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer">
-
           {% if contact.profile_image %}
             <img src="{{ contact.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
           {% else %}
-            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white border border-white font-bold mr-3"
-                 style="background-color: hsl({{ contact.id|add:50|divisibleby:360 }}, 70%, 50%)">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white border border-white font-bold mr-3">
               {{ contact.name|first|upper }}
             </div>
           {% endif %}
-
           <div>
             <p class="font-medium">{{ contact.name }}</p>
             <p class="text-gray-400 text-sm">{{ contact.phone }}</p>
           </div>
         </div>
       {% endfor %}
-
     </div>
   </div>
 
@@ -158,16 +146,6 @@
           <p id="chat-userphone" class="text-xs text-gray-400"></p>
         </div>
       </div>
-      <div class="flex space-x-4">
-        <button class="hover:text-green-400">
-          <!-- Call Icon -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#fff" d="M19.95 21q-3.125 0-6.175-1.362t-5.55-3.863t-3.862-5.55T3 4.05q0-.45.3-.75t.75-.3H8.1q.35 0 .625.238t.325.562l.65 3.5q.05.4-.025.675T9.4 8.45L6.975 10.9q.5.925 1.187 1.787t1.513 1.663q.775.775 1.625 1.438T13.1 17l2.35-2.35q.225-.225.588-.337t.712-.063l3.45.7q.35.1.575.363T21 15.9v4.05q0 .45-.3.75t-.75.3"/></svg>
-        </button>
-        <button class="hover:text-blue-400">
-          <!-- Video Icon -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4" d="m15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14zM3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        </button>
-      </div>
     </div>
 
     <!-- Messages -->
@@ -183,14 +161,103 @@
   </div>
 </div>
 
-
-
 <script>
-  window.SERVER_CURRENT_USER_ID = "{{ current_user.id }}";
-  window.SERVER_CURRENT_USER_NAME = "{{ current_user.name }}";
-  window.role = "{{ role|default:'teammember' }}";  /* optional */
-</script>
+let chatSocket = null;
 
+// Handle opening a chat with a user or extra contact
+function openChat(userId, username, phone, avatar) {
+    const emptyChat = document.getElementById("empty-chat");
+    const chatWindow = document.getElementById("chat-window");
+    const messagesDiv = document.getElementById("chat-messages");
+
+    emptyChat.classList.add("hidden");
+    chatWindow.classList.remove("hidden");
+    messagesDiv.innerHTML = ""; // clear previous messages
+
+    // Close previous socket if open
+    if (chatSocket) {
+        chatSocket.close();
+    }
+
+    // Determine room name
+    const roomName = userId.startsWith("extra-")
+        ? userId
+        : [SERVER_CURRENT_USER_ID, userId].sort((a,b) => a-b).join("_");
+
+    // Open WebSocket connection
+    chatSocket = new WebSocket(
+        (window.location.protocol === "https:" ? "wss://" : "ws://") +
+        window.location.host + "/ws/chat/" + roomName + "/"
+    );
+
+    chatSocket.onopen = () => console.log("✅ WebSocket connected");
+    chatSocket.onclose = () => console.log("❌ WebSocket closed");
+    chatSocket.onerror = (e) => console.log("⚠️ WebSocket error", e);
+
+    // Receive messages
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        appendMessage(data.sender_id, data.sender_name, data.message);
+    };
+
+    // Display chat header info
+    document.getElementById("chat-username").innerText = username;
+    document.getElementById("chat-userphone").innerText = phone;
+    if (avatar) document.getElementById("chat-avatar").src = avatar;
+
+    // Optionally: Load previous messages via AJAX
+    fetch(`/chat/messages/${roomName}/`)
+        .then(res => res.json())
+        .then(messages => {
+            messages.forEach(msg => {
+                appendMessage(msg.sender_id, msg.sender_name, msg.message);
+            });
+        });
+}
+
+// Append a message to the chat window
+function appendMessage(senderId, senderName, message) {
+    const messagesDiv = document.getElementById("chat-messages");
+    const msgElement = document.createElement("div");
+
+    msgElement.className = (senderId == SERVER_CURRENT_USER_ID)
+        ? "text-right text-green-400"
+        : "text-left text-white";
+
+    msgElement.innerHTML = `<p><b>${senderName || "User"}:</b> ${message}</p>`;
+    messagesDiv.appendChild(msgElement);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// Send a message
+function sendMessage() {
+    const input = document.getElementById("chat-input");
+    const message = input.value.trim();
+
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+        console.error("❌ WebSocket not connected.");
+        return;
+    }
+
+    if (message === "") return;
+
+    const data = {
+        "message": message,
+        "sender_id": SERVER_CURRENT_USER_ID,
+        "sender_name": SERVER_CURRENT_USER_NAME
+    };
+
+    chatSocket.send(JSON.stringify(data));
+    input.value = "";
+
+    // Optionally: append locally for instant display
+    appendMessage(SERVER_CURRENT_USER_ID, SERVER_CURRENT_USER_NAME, message);
+}
+
+// Current user info
+const SERVER_CURRENT_USER_ID = "{{ current_user.id }}";
+const SERVER_CURRENT_USER_NAME = "{{ current_user.name|escapejs }}";
+</script>
 
 
 
