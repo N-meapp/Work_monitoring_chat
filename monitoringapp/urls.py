@@ -58,7 +58,8 @@ urlpatterns = [
 
     path("teamlead/logout/", views.teamlead_logout, name="teamlead_logout"),
     path("teammember/logout/", views.teammember_logout, name="teammember_logout"),
-    path("teammember_chat/", views.teammember_chat, name="teammember_chat"), 
-
+    # path("teammember_chat/", views.teammember_chat, name="teammember_chat"),
+    path('chat/', views.teammember_chat, name='teammember_chat'),
+    path('chat/<int:user_id>/', views.chat_room, name='chat_room'),
     
 ]

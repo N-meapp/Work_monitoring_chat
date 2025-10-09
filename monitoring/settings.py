@@ -61,18 +61,11 @@ TEMPLATES = [
     },
 ]
 
-# settings.py
 
 ASGI_APPLICATION = 'monitoring.asgi.application'
 
-# Redis backend for Channels
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
-        },
-    },
+    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
 }
 
 

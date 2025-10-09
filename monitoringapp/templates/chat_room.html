@@ -33,7 +33,6 @@
     </ul>
   </nav>
 </div>
-
 <!-- Mobile Toggle -->
 <button class="menu-toggle md:hidden fixed top-8 left-4 z-50 text-white p-2 rounded shadow-lg">&#9776;</button>
 
@@ -117,20 +116,133 @@
 
 
     </div>
+
+
+
+
+
+
   </div>
 
-  <!-- Right Chat Area -->
-  <div class="flex-1 flex items-center justify-center bg-gray-100 text-gray-600">
-    <p>Select a user to start chatting</p>
+<div id="chat-window" class="flex-1 flex flex-col">
+  <!-- Chat Header -->
+  <div class="flex items-center justify-between p-4 bg-[#202c33] text-white">
+    <div class="flex items-center">
+      {% if other_user.profile_image %}
+        <img id="chat-avatar" src="{{ other_user.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
+      {% else %}
+        <div class="w-10 h-10 rounded-full bg-gray-500 mr-3"></div>
+      {% endif %}
+      <div>
+        <p id="chat-username" class="font-medium">{{ other_user.name }}</p>
+        <p id="chat-userphone" class="text-xs text-gray-400">{{ other_user.phone }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-[#0b141a]">
+    {% for msg in messages %}
+      {% if msg.sender.id == current_user.id %}
+        <div class="text-right">
+          <p class="inline-block p-2 rounded-2xl text-sm bg-green-500 text-white">{{ msg.content }}</p>
+        </div>
+      {% else %}
+        <div class="text-left flex items-start space-x-2">
+          {% if msg.sender.profile_image %}
+            <img src="{{ msg.sender.profile_image.url }}" class="w-6 h-6 rounded-full" />
+          {% else %}
+            <div class="w-6 h-6 rounded-full bg-gray-500"></div>
+          {% endif %}
+          <p class="inline-block p-2 rounded-2xl text-sm bg-gray-700 text-white">{{ msg.content }}</p>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <!-- Input -->
+  <div class="p-4 bg-[#202c33] flex items-center">
+    <input id="chat-input" type="text"
+           placeholder="Type a message"
+           class="flex-1 px-3 py-2 rounded-full bg-[#111b21] text-white border-none focus:ring-0 text-sm" />
+    <button id="sendBtn" class="ml-3 bg-green-500 px-4 py-2 rounded-full text-white">Send</button>
   </div>
 </div>
-<script src="{% static 'js/admin.js' %}"></script>
+
+<script>
+  const roomId = "{{ room.id }}";
+  const currentUserId = Number("{{ current_user.id }}");
+  const chatSocket = new WebSocket(`ws://${window.location.host}/ws/chat/${roomId}/`);
+
+  const messagesContainer = document.querySelector('#chat-messages');
+  const input = document.querySelector('#chat-input');
+  const sendBtn = document.querySelector('#sendBtn');
+
+  // Function to append message
+  function appendMessage(message, senderId, senderProfile=null) {
+    const isCurrentUser = Number(senderId) === currentUserId;
+    const alignmentClass = isCurrentUser ? 'text-right' : 'text-left flex items-start space-x-2';
+    const bubbleClass = isCurrentUser ? 'bg-green-500 text-white' : 'bg-gray-700 text-white';
+
+    let avatarHTML = '';
+    if (!isCurrentUser) {
+      avatarHTML = senderProfile
+        ? `<img src="${senderProfile}" class="w-6 h-6 rounded-full" />`
+        : `<div class="w-6 h-6 rounded-full bg-gray-500"></div>`;
+    }
+
+    const html = `
+      <div class="${alignmentClass}">
+        ${avatarHTML}
+        <p class="inline-block p-2 rounded-2xl text-sm ${bubbleClass}">${message}</p>
+      </div>`;
+    messagesContainer.insertAdjacentHTML('beforeend', html);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  // WebSocket: receive messages
+  chatSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+
+    // Ensure messages sent by this user are not appended again
+    if (Number(data.sender_id) !== currentUserId) {
+      appendMessage(data.message, data.sender_id, data.sender_profile || null);
+    }
+  };
+
+  // Send message
+  sendBtn.onclick = function() {
+    const message = input.value.trim();
+    if (!message) return;
+
+    // Append immediately on right side
+    appendMessage(message, currentUserId);
+
+    // Send to WebSocket
+    chatSocket.send(JSON.stringify({
+      message: message,
+      sender_id: currentUserId
+    }));
+
+    input.value = '';
+  };
+
+  // Enter key to send
+  input.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendBtn.click();
+    }
+  });
+
+  // Scroll to bottom on page load
+  window.addEventListener('load', () => {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  });
+</script>
+
+
+
 
 </body>
 </html>
-
-
-
-
-
-

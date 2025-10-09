@@ -277,7 +277,6 @@ def add_contact(request):
 
 
 
-
 @never_cache
 def login_view(request):
     # ✅ Already logged in → redirect
@@ -298,34 +297,34 @@ def login_view(request):
             messages.error(request, "Invalid username or password")
             return render(request, "user_login.html")
 
-        # ✅ Compare plain-text password
-        if user.password != password:
+        # ✅ Check hashed password
+        if not check_password(password, user.password):
             messages.error(request, "Invalid username or password")
             return render(request, "user_login.html")
 
+        # ✅ Check position
         db_position = user.job_Position.lower().replace(" ", "_")
         if db_position != position:
             messages.error(request, "Incorrect position selected")
             return render(request, "user_login.html")
 
-        # ✅ Mark user as active and save
+        # ✅ Mark user as active and update last login
         user.status = "active"
         user.last_login_time = timezone.now()
         user.save()
 
-        # ✅ Store in session
+        # ✅ Store session data
         request.session["user_id"] = user.id
         request.session["position"] = db_position
         request.session["login_time"] = str(timezone.now())
 
-        # ✅ Redirect to dashboard
+        # ✅ Redirect based on role
         if db_position == "team_lead":
             return redirect("teamlead_dashboard")
         else:
             return redirect("teammember_dashboard")
 
     return render(request, "user_login.html")
-
 
 
 def get_logged_in_user_api(request):
@@ -512,7 +511,7 @@ def teamlead_chat(request):
     })
 
 
-
+# ✅ List of all team members (chat sidebar)
 def teammember_chat(request):
     user_id = request.session.get("user_id")
     if not user_id:
@@ -520,8 +519,9 @@ def teammember_chat(request):
 
     current_user = get_object_or_404(User, id=user_id)
 
-    users = list(User.objects.all())
-    users.sort(key=lambda u: (0 if u.id == current_user.id else 1, u.name.lower()))
+    # Bring current user to the top of the list
+    users = list(User.objects.exclude(id=current_user.id))
+    users.sort(key=lambda u: u.name.lower())
 
     extra_contacts = ExtraContact.objects.all()
 
@@ -532,6 +532,75 @@ def teammember_chat(request):
         "role": "teammember",
     }
     return render(request, "teammember_chat.html", context)
+
+
+# ✅ Helper: get or create a private chat room between two users
+def get_or_create_room(user1, user2):
+    # Always order by ID to respect unique_together constraint
+    if user1.id > user2.id:
+        user1, user2 = user2, user1
+    room, created = ChatRoom.objects.get_or_create(user1=user1, user2=user2)
+    return room
+
+
+# # ✅ Chat room between two users
+# def chat_room(request, user_id):
+#     current_user_id = request.session.get("user_id")
+#     if not current_user_id:
+#         return redirect("login_view")
+#
+#     current_user = get_object_or_404(User, id=current_user_id)
+#     other_user = get_object_or_404(User, id=user_id)
+#
+#     # Get or create room
+#     room = get_or_create_room(current_user, other_user)
+#
+#     # Load messages in chronological order
+#     messages = room.messages.order_by("timestamp")
+#
+#     context = {
+#         "room": room,
+#         "current_user": current_user,
+#
+#         "other_user": other_user,
+#         "messages": messages,
+#     }
+#     return render(request, "chat_room.html", context)
+
+
+def chat_room(request, user_id):
+    # Ensure user is logged in
+    current_user_id = request.session.get("user_id")
+    if not current_user_id:
+        return redirect("login_view")
+
+    # Get current and selected users
+    current_user = get_object_or_404(User, id=current_user_id)
+    other_user = get_object_or_404(User, id=user_id)
+
+    # Get or create chat room between current_user and other_user
+    room = get_or_create_room(current_user, other_user)
+
+    # Fetch all users except the current one for the left user list
+    users = User.objects.filter(status='active').exclude(id=current_user.id).order_by('name')
+
+    # Optional: extra contacts (for example, inactive users or other teams)
+    extra_contacts = User.objects.filter(status='inactive')
+
+    # Fetch messages in chronological order
+    messages = room.messages.order_by("timestamp")
+
+    context = {
+        "room": room,
+        "current_user": current_user,
+        "other_user": other_user,
+        "messages": messages,
+        "users": users,
+        "extra_contacts": extra_contacts,
+    }
+    return render(request, "chat_room.html", context)
+
+
 
 
 

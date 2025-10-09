@@ -247,21 +247,28 @@ class ExtraContact(models.Model):
 
 
 class ChatRoom(models.Model):
-    name = models.CharField(max_length=255, blank=True, null=True)
-    is_group = models.BooleanField(default=False)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_rooms')
+    """Private chat between two users"""
+    user1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_user1')
+    user2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_user2')
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.name
+    class Meta:
+        unique_together = ('user1', 'user2')
 
-class ChatMessage(models.Model):
-    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name="messages")
+    def __str__(self):
+        return f"Chat between {self.user1.name} and {self.user2.name}"
+
+    def get_room_name(self):
+        return f"room_{self.id}"
+
+
+class Message(models.Model):
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
-    message = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
+    content = models.TextField()
+    timestamp = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.sender} - {self.message[:20]}"
+        return f"{self.sender.name}: {self.content[:20]}"
 
 
