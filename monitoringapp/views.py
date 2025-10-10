@@ -489,26 +489,51 @@ def is_within_time_range(start_time, end_time, now=None):
 
 
 
+# def teamlead_chat(request):
+#     user_id = request.session.get("user_id")
+#     if not user_id:
+#         return redirect("login_view")
+#
+#     current_user = User.objects.get(id=user_id)
+#
+#     # All users
+#     users = list(User.objects.all())
+#
+#     # Reorder: put current_user first
+#     users.sort(key=lambda u: 0 if u.id == current_user.id else 1)
+#
+#     extra_contacts = ExtraContact.objects.all()
+#
+#     return render(request, 'teamlead_chat.html', {
+#         'current_user': current_user,
+#         'users': users,
+#         'extra_contacts': extra_contacts,
+#     })
+
+
 def teamlead_chat(request):
     user_id = request.session.get("user_id")
     if not user_id:
         return redirect("login_view")
 
-    current_user = User.objects.get(id=user_id)
+    current_user = get_object_or_404(User, id=user_id)
 
-    # All users
-    users = list(User.objects.all())
-
-    # Reorder: put current_user first
-    users.sort(key=lambda u: 0 if u.id == current_user.id else 1)
+    # Bring current user to the top of the list
+    users = list(User.objects.exclude(id=current_user.id))
+    users.sort(key=lambda u: u.name.lower())
 
     extra_contacts = ExtraContact.objects.all()
 
-    return render(request, 'teamlead_chat.html', {
-        'current_user': current_user,
-        'users': users,
-        'extra_contacts': extra_contacts,
-    })
+    context = {
+        "current_user": current_user,
+        "users": users,
+        "extra_contacts": extra_contacts,
+        "role": "teammember",
+    }
+
+    return render(request, 'teamlead_chat.html', context)
+
+
 
 
 # ✅ List of all team members (chat sidebar)
@@ -543,29 +568,6 @@ def get_or_create_room(user1, user2):
     return room
 
 
-# # ✅ Chat room between two users
-# def chat_room(request, user_id):
-#     current_user_id = request.session.get("user_id")
-#     if not current_user_id:
-#         return redirect("login_view")
-#
-#     current_user = get_object_or_404(User, id=current_user_id)
-#     other_user = get_object_or_404(User, id=user_id)
-#
-#     # Get or create room
-#     room = get_or_create_room(current_user, other_user)
-#
-#     # Load messages in chronological order
-#     messages = room.messages.order_by("timestamp")
-#
-#     context = {
-#         "room": room,
-#         "current_user": current_user,
-#
-#         "other_user": other_user,
-#         "messages": messages,
-#     }
-#     return render(request, "chat_room.html", context)
 
 
 def chat_room(request, user_id):
