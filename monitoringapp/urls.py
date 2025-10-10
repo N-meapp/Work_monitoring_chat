@@ -61,5 +61,7 @@ urlpatterns = [
     # path("teammember_chat/", views.teammember_chat, name="teammember_chat"),
     path('chat/', views.teammember_chat, name='teammember_chat'),
     path('chat/<int:user_id>/', views.chat_room, name='chat_room'),
+
+    path('chat/group/<int:group_id>/', views.group_chat_view, name='group_chat_view'),
     
 ]

@@ -22,7 +22,7 @@ from django.views.decorators.cache import never_cache
 from django.utils.cache import add_never_cache_headers
 
 from django.http import JsonResponse
-
+from django.db import transaction
 
 
 
@@ -489,27 +489,6 @@ def is_within_time_range(start_time, end_time, now=None):
 
 
 
-# def teamlead_chat(request):
-#     user_id = request.session.get("user_id")
-#     if not user_id:
-#         return redirect("login_view")
-#
-#     current_user = User.objects.get(id=user_id)
-#
-#     # All users
-#     users = list(User.objects.all())
-#
-#     # Reorder: put current_user first
-#     users.sort(key=lambda u: 0 if u.id == current_user.id else 1)
-#
-#     extra_contacts = ExtraContact.objects.all()
-#
-#     return render(request, 'teamlead_chat.html', {
-#         'current_user': current_user,
-#         'users': users,
-#         'extra_contacts': extra_contacts,
-#     })
-
 
 def teamlead_chat(request):
     user_id = request.session.get("user_id")
@@ -523,12 +502,37 @@ def teamlead_chat(request):
     users.sort(key=lambda u: u.name.lower())
 
     extra_contacts = ExtraContact.objects.all()
+    groups = Group.objects.filter(memberships__user=current_user).distinct()
+
+    # Handle Create Group from modal
+    if request.method == "POST" and request.POST.get("action") == "create_group":
+        group_name = request.POST.get("group_name")
+        member_ids = request.POST.getlist("members")  # list of user ids
+
+        if group_name:
+            with transaction.atomic():
+                # ✅ Create group with required created_by field
+                group = Group.objects.create(name=group_name, created_by=current_user)
+
+                # Add creator as group member
+                GroupMember.objects.create(group=group, user=current_user)
+
+                # Add other selected members
+                for uid in member_ids:
+                    user = User.objects.get(id=uid)
+                    GroupMember.objects.get_or_create(group=group, user=user)
+
+            messages.success(request, f"Group '{group_name}' created successfully!")
+            return redirect("teammember_chat")
+        else:
+            messages.error(request, "Please provide a group name.")
 
     context = {
         "current_user": current_user,
         "users": users,
         "extra_contacts": extra_contacts,
         "role": "teammember",
+        "groups": groups,
     }
 
     return render(request, 'teamlead_chat.html', context)
@@ -536,27 +540,81 @@ def teamlead_chat(request):
 
 
 
-# ✅ List of all team members (chat sidebar)
+# # ✅ List of all team members (chat sidebar)
+# def teammember_chat(request):
+#     user_id = request.session.get("user_id")
+#     if not user_id:
+#         return redirect("login_view")
+#
+#     current_user = get_object_or_404(User, id=user_id)
+#
+#     # Bring current user to the top of the list
+#     users = list(User.objects.exclude(id=current_user.id))
+#     users.sort(key=lambda u: u.name.lower())
+#
+#     extra_contacts = ExtraContact.objects.all()
+#     # ✅ Fetch groups where the current user is a member
+#     groups = Group.objects.filter(memberships__user=current_user).distinct()
+#
+#     context = {
+#         "current_user": current_user,
+#         "users": users,
+#         "extra_contacts": extra_contacts,
+#         "groups": groups,
+#         "role": "teammember",
+#     }
+#     return render(request, "teammember_chat.html", context)
+
+
 def teammember_chat(request):
+    # Check session-based login
     user_id = request.session.get("user_id")
     if not user_id:
         return redirect("login_view")
 
     current_user = get_object_or_404(User, id=user_id)
 
-    # Bring current user to the top of the list
+    # Users list excluding current user
     users = list(User.objects.exclude(id=current_user.id))
     users.sort(key=lambda u: u.name.lower())
 
     extra_contacts = ExtraContact.objects.all()
+    groups = Group.objects.filter(memberships__user=current_user).distinct()
+
+    # Handle Create Group from modal
+    if request.method == "POST" and request.POST.get("action") == "create_group":
+        group_name = request.POST.get("group_name")
+        member_ids = request.POST.getlist("members")  # list of user ids
+
+        if group_name:
+            with transaction.atomic():
+                # ✅ Create group with required created_by field
+                group = Group.objects.create(name=group_name, created_by=current_user)
+
+                # Add creator as group member
+                GroupMember.objects.create(group=group, user=current_user)
+
+                # Add other selected members
+                for uid in member_ids:
+                    user = User.objects.get(id=uid)
+                    GroupMember.objects.get_or_create(group=group, user=user)
+
+            messages.success(request, f"Group '{group_name}' created successfully!")
+            return redirect("teammember_chat")
+        else:
+            messages.error(request, "Please provide a group name.")
 
     context = {
         "current_user": current_user,
         "users": users,
         "extra_contacts": extra_contacts,
+        "groups": groups,
         "role": "teammember",
     }
+
     return render(request, "teammember_chat.html", context)
+
+
 
 
 # ✅ Helper: get or create a private chat room between two users
@@ -603,7 +661,53 @@ def chat_room(request, user_id):
     return render(request, "chat_room.html", context)
 
 
+def group_chat_view(request, group_id):
+    # Get the group
+    group = get_object_or_404(Group, id=group_id)
 
+    # Get the logged-in user from session
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return redirect("login_view")  # redirect if not logged in
+    current_user = get_object_or_404(User, id=user_id)
+
+    # Get all messages for this group
+    messages_qs = GroupMessage.objects.filter(group=group).order_by('timestamp')
+
+    # Get group members
+    members = GroupMember.objects.filter(group=group).select_related('user')
+
+    # Users who are not members
+    all_users = User.objects.exclude(id__in=[m.user.id for m in members])
+
+    # Handle only member management via POST
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        # ----------------- ADD MEMBER -----------------
+        if action == "add_member":
+            user_id = request.POST.get("user_id")
+            user = get_object_or_404(User, id=user_id)
+            GroupMember.objects.get_or_create(group=group, user=user)
+            messages.success(request, f"{user.name} added to {group.name}.")
+            return redirect('group_chat_view', group_id=group.id)
+
+        # ----------------- REMOVE MEMBER -----------------
+        elif action == "remove_member":
+            user_id = request.POST.get("user_id")
+            member = get_object_or_404(GroupMember, group=group, user_id=user_id)
+            member.delete()
+            messages.warning(request, "Member removed successfully.")
+            return redirect('group_chat_view', group_id=group.id)
+
+    context = {
+        "group": group,
+        "messages": messages_qs,
+        "members": members,
+        "all_users": all_users,
+        "current_user": current_user,  # useful for template
+    }
+    return render(request, 'group_chat.html', context)
 
 
 @never_cache

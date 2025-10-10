@@ -23,8 +23,6 @@ class Team(models.Model):
 
 
 
-
-
 class User(models.Model):
     STATUS_CHOICES = (
         ('active', 'Active'),
@@ -55,6 +53,8 @@ class User(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.designation})"
+
+
 
     
 
@@ -270,5 +270,44 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.sender.name}: {self.content[:20]}"
+
+
+class Group(models.Model):
+    name = models.CharField(max_length=150)
+    description = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey('User', on_delete=models.CASCADE, related_name='created_groups')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class GroupMember(models.Model):
+    ROLE_CHOICES = (
+        ('admin', 'Admin'),
+        ('member', 'Member'),
+    )
+
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='memberships')
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='group_memberships')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='member')
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('group', 'user')
+
+    def __str__(self):
+        return f"{self.user.name} in {self.group.name}"
+
+
+class GroupMessage(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey('User', on_delete=models.CASCADE)
+    message = models.TextField()
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.sender.name}: {self.message[:30]}"
+
 
 

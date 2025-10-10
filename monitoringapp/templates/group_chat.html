@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ group.name }} - Group Chat</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css">
+</head>
+<body class="bg-gray-100">
+
+<div class="max-w-4xl mx-auto my-10 bg-white shadow-md rounded-lg p-6">
+    <h1 class="text-2xl font-bold mb-4">{{ group.name }}</h1>
+
+    <!-- Group Members -->
+    <h2 class="text-lg font-semibold mb-2">Members:</h2>
+    <ul class="mb-4">
+        {% for member in members %}
+            <li class="flex justify-between items-center border-b py-2">
+                <span>{{ member.user.name }}</span>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" value="{{ member.user.id }}">
+                    <input type="hidden" name="action" value="remove_member">
+                    <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Remove</button>
+                </form>
+            </li>
+        {% empty %}
+            <p>No members yet.</p>
+        {% endfor %}
+    </ul>
+
+    <!-- Add Member -->
+    <h2 class="text-lg font-semibold mb-2">Add Member:</h2>
+    <form method="POST" class="mb-6">
+        {% csrf_token %}
+        <select name="user_id" class="border p-2 rounded">
+            {% for user in all_users %}
+                <option value="{{ user.id }}">{{ user.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="hidden" name="action" value="add_member">
+        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add</button>
+    </form>
+<div class="border rounded-lg p-4 h-64 overflow-y-auto mb-4 flex flex-col space-y-2 chat-messages">
+    {% for message in messages %}
+        {% if message.sender.id == current_user.id %}
+            <div class="self-end bg-green-500 text-white px-4 py-2 rounded-lg max-w-xs break-words">
+                {{ message.message }}
+                <div class="text-xs text-gray-200 text-right mt-1">
+                    {{ message.timestamp|date:"H:i" }}
+                </div>
+            </div>
+        {% else %}
+            <div class="self-start bg-gray-200 text-gray-800 px-4 py-2 rounded-lg max-w-xs break-words">
+                <strong>{{ message.sender.name }}:</strong> {{ message.message }}
+                <div class="text-xs text-gray-500 mt-1">
+                    {{ message.timestamp|date:"H:i" }}
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>
+
+<form id="chat-form">
+    <input type="text" id="message-input" placeholder="Type your message..." class="border rounded w-3/4 p-2">
+    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Send</button>
+</form>
+
+<script>
+const groupId = "{{ group.id }}";
+const currentUserId = "{{ current_user.id }}";
+const chatMessages = document.querySelector('.chat-messages');
+
+const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/group/${groupId}/`);
+
+chatSocket.onopen = () => console.log("WebSocket connected!");
+
+// Handle incoming messages (new and old)
+chatSocket.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+
+    // Extract data safely
+    const senderId = data.sender_id || null;
+    const message = data.message || "";
+    const senderName = data.sender || "Unknown";
+    const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
+
+    const div = document.createElement('div');
+
+    if (parseInt(senderId) === parseInt(currentUserId)) {
+        div.className = 'self-end bg-green-500 text-white px-4 py-2 rounded-lg max-w-xs break-words';
+        div.textContent = message;
+    } else {
+        div.className = 'self-start bg-gray-200 text-gray-800 px-4 py-2 rounded-lg max-w-xs break-words';
+        div.innerHTML = `<strong>${senderName}:</strong> ${message}`;
+    }
+
+    const tsDiv = document.createElement('div');
+    tsDiv.className = 'text-xs text-gray-500 mt-1';
+    tsDiv.innerText = timestamp.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+    div.appendChild(tsDiv);
+
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+};
+
+// Optional: reconnect logic if connection drops
+chatSocket.onclose = (e) => {
+    console.log("WebSocket closed!", e);
+    // Optional: you can try to reconnect automatically
+};
+
+// Sending a new message
+document.getElementById('chat-form').onsubmit = (e) => {
+    e.preventDefault();
+    const input = document.getElementById('message-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    chatSocket.send(JSON.stringify({
+        message: message,
+        sender_id: currentUserId
+    }));
+
+    input.value = '';
+};
+</script>
+
+
+
+</div>
+
+</body>
+
+</html>

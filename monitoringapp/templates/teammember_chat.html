@@ -88,6 +88,68 @@
 
 
 
+        <!-- Group Chats Section -->
+<h3 class="font-semibold mb-2 flex justify-between items-center">
+  <span>Group Chats</span>
+  <!-- Button to Open Modal -->
+  <button id="openModal"
+          class="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700">
+    ➕ Create
+  </button>
+</h3>
+
+{% for group in groups %}
+<div class="flex justify-between items-center mb-1 bg-[#202c33] text-white p-2 rounded">
+    <span>{{ group.name }}</span>
+    <a href="{% url 'group_chat_view' group.id %}"
+       class="text-sm bg-green-600 px-2 py-1 rounded hover:bg-green-700">
+       💬 Chat
+    </a>
+</div>
+{% empty %}
+<p class="text-gray-400">No group chats yet.</p>
+{% endfor %}
+
+
+        <!-- Modal Overlay -->
+<div id="groupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+  <div class="bg-white rounded-lg w-96 p-6 mx-2 max-h-[90vh] overflow-y-auto">
+    <h2 class="text-xl font-bold mb-4">Create New Group</h2>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_group">
+
+      <label class="block mb-2 font-semibold">Group Name:</label>
+      <input type="text" name="group_name" class="border p-2 rounded w-full mb-4" placeholder="Enter group name" required>
+
+      <label class="block mb-2 font-semibold">Add Members:</label>
+      <select name="members" multiple class="border p-2 rounded w-full mb-4">
+        {% for user in users %}
+        <option value="{{ user.id }}">{{ user.name }}</option>
+        {% endfor %}
+      </select>
+
+      <div class="flex justify-end space-x-2">
+        <button type="button" id="closeModal" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+<!-- ✅ Modal JS -->
+<script>
+const openModal = document.getElementById('openModal');
+const closeModal = document.getElementById('closeModal');
+const modal = document.getElementById('groupModal');
+
+openModal.addEventListener('click', () => modal.classList.remove('hidden'));
+closeModal.addEventListener('click', () => modal.classList.add('hidden'));
+</script>
+
+
 
 
       <!-- Extra Contacts -->
@@ -127,6 +189,7 @@
 <script src="{% static 'js/admin.js' %}"></script>
 
 </body>
+
 </html>
 
 
