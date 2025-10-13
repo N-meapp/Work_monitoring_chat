@@ -172,53 +172,61 @@
 <script>
   const roomId = "{{ room.id }}";
   const currentUserId = Number("{{ current_user.id }}");
-  const chatSocket = new WebSocket(`ws://${window.location.host}/ws/chat/${roomId}/`);
+  const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+  const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${roomId}/`);
 
   const messagesContainer = document.querySelector('#chat-messages');
   const input = document.querySelector('#chat-input');
   const sendBtn = document.querySelector('#sendBtn');
 
-  // Function to append message
-  function appendMessage(message, senderId, senderProfile=null) {
+  // --- Append message to chat ---
+  function appendMessage(message, senderId, senderName = '', senderProfile = null) {
     const isCurrentUser = Number(senderId) === currentUserId;
-    const alignmentClass = isCurrentUser ? 'text-right' : 'text-left flex items-start space-x-2';
-    const bubbleClass = isCurrentUser ? 'bg-green-500 text-white' : 'bg-gray-700 text-white';
 
-    let avatarHTML = '';
+    const wrapper = document.createElement('div');
+    wrapper.className = isCurrentUser
+      ? 'text-right mb-2'
+      : 'text-left flex items-start space-x-2 mb-2';
+
+    const bubble = document.createElement('p');
+    bubble.className = `inline-block p-2 rounded-2xl text-sm ${
+      isCurrentUser ? 'bg-green-500 text-white' : 'bg-gray-700 text-white'
+    }`;
+    bubble.textContent = message;
+
     if (!isCurrentUser) {
-      avatarHTML = senderProfile
-        ? `<img src="${senderProfile}" class="w-6 h-6 rounded-full" />`
-        : `<div class="w-6 h-6 rounded-full bg-gray-500"></div>`;
+      const avatar = document.createElement('img');
+      avatar.src = senderProfile || '';
+      avatar.className = 'w-6 h-6 rounded-full';
+      wrapper.appendChild(avatar);
     }
 
-    const html = `
-      <div class="${alignmentClass}">
-        ${avatarHTML}
-        <p class="inline-block p-2 rounded-2xl text-sm ${bubbleClass}">${message}</p>
-      </div>`;
-    messagesContainer.insertAdjacentHTML('beforeend', html);
+    wrapper.appendChild(bubble);
+    messagesContainer.appendChild(wrapper);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
-  // WebSocket: receive messages
-  chatSocket.onmessage = function(e) {
-    const data = JSON.parse(e.data);
+  chatSocket.onmessage = (e) => {
+  const data = JSON.parse(e.data);
+  console.log("Received via WebSocket:", data);
 
-    // Ensure messages sent by this user are not appended again
-    if (Number(data.sender_id) !== currentUserId) {
-      appendMessage(data.message, data.sender_id, data.sender_profile || null);
-    }
-  };
+  const senderId = Number(data.sender_id);
+  const message = data.message;
 
-  // Send message
-  sendBtn.onclick = function() {
+  // Append normally; appendMessage() already handles left/right alignment
+  appendMessage(message, senderId, data.sender, data.sender_profile || null);
+};
+
+
+  // --- Send message ---
+  sendBtn.onclick = () => {
     const message = input.value.trim();
     if (!message) return;
 
-    // Append immediately on right side
+    // Append immediately (local preview)
     appendMessage(message, currentUserId);
 
-    // Send to WebSocket
+    // Send through WebSocket
     chatSocket.send(JSON.stringify({
       message: message,
       sender_id: currentUserId
@@ -227,19 +235,20 @@
     input.value = '';
   };
 
-  // Enter key to send
-  input.addEventListener('keypress', function(e) {
+  // --- Enter key sends message ---
+  input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       sendBtn.click();
     }
   });
 
-  // Scroll to bottom on page load
+  // --- Scroll to bottom on load ---
   window.addEventListener('load', () => {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   });
 </script>
+
 
 
 

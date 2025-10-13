@@ -3,114 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ group.name }} - Group Chat</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-[#111b21] text-white font-sans">
 
-<div class="max-w-4xl mx-auto my-10 bg-white shadow-md rounded-lg p-6">
-    <h1 class="text-2xl font-bold mb-4">{{ group.name }}</h1>
+<!-- Main Container -->
+<div class="max-w-5xl mx-auto mt-6 h-[90vh] bg-[#1f2c34] rounded-lg shadow-lg flex flex-col overflow-hidden">
 
-    <!-- Group Members -->
-    <h2 class="text-lg font-semibold mb-2">Members:</h2>
-    <ul class="mb-4">
-        {% for member in members %}
-            <li class="flex justify-between items-center border-b py-2">
+    <!-- Header -->
+    <div class="flex justify-between items-center bg-[#202c33] px-4 py-3 border-b border-gray-700">
+        <div>
+            <h1 class="text-xl font-bold text-green-400">{{ group.name }}</h1>
+            <p class="text-sm text-gray-400">{{ members|length }} members</p>
+        </div>
+        <div>
+            <button onclick="document.getElementById('groupSettings').classList.toggle('hidden')" 
+                    class="bg-[#2a3942] hover:bg-[#3a4b55] px-4 py-2 rounded text-sm text-gray-200">
+                ⚙️ Manage Group
+            </button>
+        </div>
+    </div>
+
+    <!-- Manage Group Section -->
+    <div id="groupSettings" class="hidden bg-[#111b21] border-b border-gray-700 p-4 space-y-4 overflow-y-auto">
+        <h2 class="text-lg font-semibold text-green-400">Members</h2>
+        <ul class="space-y-2">
+            {% for member in members %}
+            <li class="flex justify-between items-center bg-[#2a3942] p-2 rounded-lg">
                 <span>{{ member.user.name }}</span>
                 <form method="POST">
                     {% csrf_token %}
                     <input type="hidden" name="user_id" value="{{ member.user.id }}">
                     <input type="hidden" name="action" value="remove_member">
-                    <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Remove</button>
+                    <button type="submit" class="text-red-400 hover:text-red-500 text-sm">Remove</button>
                 </form>
             </li>
-        {% empty %}
-            <p>No members yet.</p>
-        {% endfor %}
-    </ul>
-
-    <!-- Add Member -->
-    <h2 class="text-lg font-semibold mb-2">Add Member:</h2>
-    <form method="POST" class="mb-6">
-        {% csrf_token %}
-        <select name="user_id" class="border p-2 rounded">
-            {% for user in all_users %}
-                <option value="{{ user.id }}">{{ user.name }}</option>
+            {% empty %}
+            <p class="text-gray-400 text-sm">No members yet.</p>
             {% endfor %}
-        </select>
-        <input type="hidden" name="action" value="add_member">
-        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add</button>
-    </form>
-<div class="border rounded-lg p-4 h-64 overflow-y-auto mb-4 flex flex-col space-y-2 chat-messages">
-    {% for message in messages %}
-        {% if message.sender.id == current_user.id %}
-            <div class="self-end bg-green-500 text-white px-4 py-2 rounded-lg max-w-xs break-words">
-                {{ message.message }}
-                <div class="text-xs text-gray-200 text-right mt-1">
-                    {{ message.timestamp|date:"H:i" }}
-                </div>
-            </div>
-        {% else %}
-            <div class="self-start bg-gray-200 text-gray-800 px-4 py-2 rounded-lg max-w-xs break-words">
-                <strong>{{ message.sender.name }}:</strong> {{ message.message }}
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ message.timestamp|date:"H:i" }}
-                </div>
-            </div>
-        {% endif %}
-    {% endfor %}
-</div>
+        </ul>
 
-<form id="chat-form">
-    <input type="text" id="message-input" placeholder="Type your message..." class="border rounded w-3/4 p-2">
-    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Send</button>
-</form>
+        <h2 class="text-lg font-semibold text-green-400 pt-4">Add Member</h2>
+        <form method="POST" class="flex space-x-2">
+            {% csrf_token %}
+            <select name="user_id" class="flex-1 bg-[#2a3942] border border-gray-600 rounded-lg text-white p-2 focus:outline-none">
+                {% for user in all_users %}
+                <option value="{{ user.id }}">{{ user.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="hidden" name="action" value="add_member">
+            <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Add</button>
+        </form>
+    </div>
+
+    <!-- Chat Area -->
+    <div id="chat-area" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-3 bg-[#111b21]">
+        {% for message in messages %}
+            {% if message.sender.id == current_user.id %}
+                <div class="self-end bg-green-500 text-white px-4 py-2 rounded-2xl max-w-xs break-words shadow">
+                    {{ message.message }}
+                    <div class="text-xs text-gray-200 text-right mt-1">
+                        {{ message.timestamp|date:"H:i" }}
+                    </div>
+                </div>
+            {% else %}
+                <div class="self-start bg-[#2a3942] text-gray-200 px-4 py-2 rounded-2xl max-w-xs break-words shadow">
+                    <strong class="text-green-400">{{ message.sender.name }}:</strong> {{ message.message }}
+                    <div class="text-xs text-gray-500 mt-1">
+                        {{ message.timestamp|date:"H:i" }}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- Message Input -->
+    <form id="chat-form" class="bg-[#202c33] border-t border-gray-700 flex items-center p-3 space-x-3">
+        <input type="text" id="message-input" placeholder="Type a message" 
+               class="flex-1 bg-[#2a3942] text-white placeholder-gray-400 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+        <button type="submit" 
+                class="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-full">
+            ➤
+        </button>
+    </form>
+</div>
 
 <script>
 const groupId = "{{ group.id }}";
 const currentUserId = "{{ current_user.id }}";
-const chatMessages = document.querySelector('.chat-messages');
+const chatMessages = document.getElementById('chat-area');
 
 const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
 const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/group/${groupId}/`);
 
-chatSocket.onopen = () => console.log("WebSocket connected!");
+chatSocket.onopen = () => console.log("✅ WebSocket connected");
 
-// Handle incoming messages (new and old)
 chatSocket.onmessage = (e) => {
     const data = JSON.parse(e.data);
-
-    // Extract data safely
     const senderId = data.sender_id || null;
     const message = data.message || "";
     const senderName = data.sender || "Unknown";
     const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
 
-    const div = document.createElement('div');
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('max-w-xs', 'break-words', 'px-4', 'py-2', 'rounded-2xl', 'shadow');
 
     if (parseInt(senderId) === parseInt(currentUserId)) {
-        div.className = 'self-end bg-green-500 text-white px-4 py-2 rounded-lg max-w-xs break-words';
-        div.textContent = message;
+        msgDiv.classList.add('self-end', 'bg-green-500', 'text-white');
+        msgDiv.textContent = message;
     } else {
-        div.className = 'self-start bg-gray-200 text-gray-800 px-4 py-2 rounded-lg max-w-xs break-words';
-        div.innerHTML = `<strong>${senderName}:</strong> ${message}`;
+        msgDiv.classList.add('self-start', 'bg-[#2a3942]', 'text-gray-200');
+        msgDiv.innerHTML = `<strong class="text-green-400">${senderName}:</strong> ${message}`;
     }
 
-    const tsDiv = document.createElement('div');
-    tsDiv.className = 'text-xs text-gray-500 mt-1';
-    tsDiv.innerText = timestamp.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-    div.appendChild(tsDiv);
+    const ts = document.createElement('div');
+    ts.classList.add('text-xs', 'mt-1', 'text-gray-500');
+    ts.innerText = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    msgDiv.appendChild(ts);
 
-    chatMessages.appendChild(div);
+    chatMessages.appendChild(msgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 };
 
-// Optional: reconnect logic if connection drops
-chatSocket.onclose = (e) => {
-    console.log("WebSocket closed!", e);
-    // Optional: you can try to reconnect automatically
-};
+chatSocket.onclose = (e) => console.log("❌ WebSocket closed", e);
 
-// Sending a new message
 document.getElementById('chat-form').onsubmit = (e) => {
     e.preventDefault();
     const input = document.getElementById('message-input');
@@ -126,10 +142,5 @@ document.getElementById('chat-form').onsubmit = (e) => {
 };
 </script>
 
-
-
-</div>
-
 </body>
-
 </html>
