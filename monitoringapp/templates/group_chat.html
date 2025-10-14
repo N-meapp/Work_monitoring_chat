@@ -1,14 +1,189 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ group.name }} - Group Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Member Chat - Cybexel</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
 </head>
-<body class="bg-[#111b21] text-white font-sans">
+<body class="bg-black text-white font-sans select-none">
+
+<!-- Sidebar -->
+<div id="sidebar"
+     class="fixed top-0 left-0 h-full w-64 bg-[#250f1e] overflow-y-auto text-white p-6 z-50 transition-transform duration-300 ease-in-out">
+  <div class="flex items-center justify-between mb-6">
+    <div class="w-full flex justify-center select-none">
+      <img src="{% static 'images/logo.png' %}" alt="Logo" class="w-32 h-32 object-contain">
+    </div>
+    <button class="menu-toggle md:hidden text-white text-2xl max-md:mt-[-9rem]">&times;</button>
+  </div>
+
+  <nav class="select-none">
+    <ul class="space-y-8 text-sm">
+      <li><a href="{% url 'teammember_dashboard' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Team member Dashboard</a></li>
+      <li><a href="{% url 'teammember_project' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Team member Project</a></li>
+      <li><a href="{% url 'teammember_notepad' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Notepad</a></li>
+      <li><a href="{% url 'teammember_repository' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Knowledge Repository</a></li>
+      <li><a href="{% url 'teammember_profile' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Profile</a></li>
+      <li><a href="{% url 'teammember_task' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">My task</a></li>
+      <li><a href="{% url 'teammember_chat' %}" class="block py-2 px-4 rounded bg-white text-black">Chat</a></li>
+      <li><a href="{% url 'teammember_logout' %}" class="block py-2 px-4 rounded bg-red-600 text-white">Logout</a></li>
+    </ul>
+  </nav>
+</div>
+
+<!-- Mobile Toggle -->
+<button class="menu-toggle md:hidden fixed top-8 left-4 z-50 text-white p-2 rounded shadow-lg">&#9776;</button>
+
+<!-- Main Content -->
+<div class="flex h-screen ml-64">  <!-- 👈 Added ml-64 to move right of sidebar -->
+
+  <!-- Left Chat List -->
+  <div class="w-80 bg-[#111b21] border-r border-r-white text-white flex flex-col">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between p-4 border-b border-gray-700">
+      <h2 class="font-bold text-lg">Chats</h2>
+<button onclick="openModal()" class="p-2 rounded-full hover:bg-gray-700">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <path d="M12 5v14M5 12h14" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
+
+    </div>
+
+    <!-- Team Members -->
+    <div class="p-4 overflow-y-auto flex-1">
+      <h2 class="font-bold text-lg mb-4">Team Members</h2>
+
+<div id="user-list" class="flex-1 overflow-y-auto">
+  {% for user in users %}
+  <div class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer">
+    <a href="{% url 'chat_room' user.id %}" class="flex items-center w-full">
+      {% if user.profile_image %}
+        <img src="{{ user.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
+      {% else %}
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white border border-white font-bold mr-3">
+          {% if user.id == current_user.id %}
+            M
+          {% else %}
+            {{ user.name|first|upper }}
+          {% endif %}
+        </div>
+      {% endif %}
+      <div>
+        {% if user.id == current_user.id %}
+          <p class="font-medium">Me</p>
+          <p class="text-gray-400 text-sm">{{ user.phone }}</p>
+        {% else %}
+          <p class="font-medium">{{ user.name }}</p>
+          <p class="text-gray-400 text-sm">{{ user.phone }}</p>
+        {% endif %}
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+
+
+
+        <!-- Group Chats Section -->
+<h3 class="font-semibold mb-2 flex justify-between items-center">
+  <span>Group Chats</span>
+  <!-- Button to Open Modal -->
+  <button id="openModal"
+          class="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700">
+    ➕ Create
+  </button>
+</h3>
+
+{% for group in groups %}
+<div class="flex justify-between items-center mb-1 bg-[#202c33] text-white p-2 rounded">
+    <span>{{ group.name }}</span>
+    <a href="{% url 'group_chat_view' group.id %}"
+       class="text-sm bg-green-600 px-2 py-1 rounded hover:bg-green-700">
+       💬 Chat
+    </a>
+</div>
+{% empty %}
+<p class="text-gray-400">No group chats yet.</p>
+{% endfor %}
+
+
+        <!-- Modal Overlay -->
+<div id="groupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+  <div class="bg-white rounded-lg w-96 p-6 mx-2 max-h-[90vh] overflow-y-auto">
+    <h2 class="text-xl font-bold mb-4">Create New Group</h2>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_group">
+
+      <label class="block mb-2 font-semibold">Group Name:</label>
+      <input type="text" name="group_name" class="border p-2 rounded w-full mb-4" placeholder="Enter group name" required>
+
+      <label class="block mb-2 font-semibold">Add Members:</label>
+      <select name="members" multiple class="border p-2 rounded w-full mb-4">
+        {% for user in users %}
+        <option value="{{ user.id }}">{{ user.name }}</option>
+        {% endfor %}
+      </select>
+
+      <div class="flex justify-end space-x-2">
+        <button type="button" id="closeModal" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+<!-- ✅ Modal JS -->
+<script>
+const openModal = document.getElementById('openModal');
+const closeModal = document.getElementById('closeModal');
+const modal = document.getElementById('groupModal');
+
+openModal.addEventListener('click', () => modal.classList.remove('hidden'));
+closeModal.addEventListener('click', () => modal.classList.add('hidden'));
+</script>
+
+
+
+
+      <!-- Extra Contacts -->
+      {% for contact in extra_contacts %}
+         <a href="{% url 'chat_room' contact.id %}" >
+        <div class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer">
+
+          {% if contact.profile_image %}
+            <img src="{{ contact.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
+          {% else %}
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white border border-white font-bold mr-3">
+              {{ contact.name|first|upper }}
+            </div>
+          {% endif %}
+          <div>
+            <p class="font-medium">{{ contact.name }}</p>
+            <p class="text-gray-400 text-sm">{{ contact.phone }}</p>
+          </div>
+
+        </div>
+               </a>
+      {% endfor %}
+
+
+
+
+
+
+    </div>
+  </div>
 
 <!-- Main Container -->
-<div class="max-w-5xl mx-auto mt-6 h-[90vh] bg-[#1f2c34] rounded-lg shadow-lg flex flex-col overflow-hidden">
+<div class="w-full mx-auto  h-screen bg-[#1f2c34] rounded-lg shadow-lg flex flex-col overflow-hidden">
 
     <!-- Header -->
     <div class="flex justify-between items-center bg-[#202c33] px-4 py-3 border-b border-gray-700">

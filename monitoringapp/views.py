@@ -662,53 +662,102 @@ def chat_room(request, user_id):
 
 
 def group_chat_view(request, group_id):
-    # Get the group
-    group = get_object_or_404(Group, id=group_id)
-
-    # Get the logged-in user from session
+    # ============================
+    # 🔹 LOGIN CHECK
+    # ============================
     user_id = request.session.get("user_id")
     if not user_id:
-        return redirect("login_view")  # redirect if not logged in
+        return redirect("login_view")
     current_user = get_object_or_404(User, id=user_id)
 
-    # Get all messages for this group
+    # ============================
+    # 🔹 CORE GROUP DATA
+    # ============================
+    group = get_object_or_404(Group, id=group_id)
     messages_qs = GroupMessage.objects.filter(group=group).order_by('timestamp')
-
-    # Get group members
     members = GroupMember.objects.filter(group=group).select_related('user')
-
-    # Users who are not members
     all_users = User.objects.exclude(id__in=[m.user.id for m in members])
 
-    # Handle only member management via POST
+    # ============================
+    # 🔹 ADDITIONAL DATA (from teammember_chat)
+    # ============================
+    users = list(User.objects.exclude(id=current_user.id))
+    users.sort(key=lambda u: u.name.lower())
+    extra_contacts = ExtraContact.objects.all()
+    groups = Group.objects.filter(memberships__user=current_user).distinct()
+
+    # ============================
+    # 🔹 HANDLE GROUP MANAGEMENT
+    # ============================
     if request.method == "POST":
         action = request.POST.get("action")
 
-        # ----------------- ADD MEMBER -----------------
+        # ---- Add Member ----
         if action == "add_member":
-            user_id = request.POST.get("user_id")
-            user = get_object_or_404(User, id=user_id)
-            GroupMember.objects.get_or_create(group=group, user=user)
-            messages.success(request, f"{user.name} added to {group.name}.")
+            new_user_id = request.POST.get("user_id")
+            new_user = get_object_or_404(User, id=new_user_id)
+            GroupMember.objects.get_or_create(group=group, user=new_user)
+            messages.success(request, f"{new_user.name} added to {group.name}.")
             return redirect('group_chat_view', group_id=group.id)
 
-        # ----------------- REMOVE MEMBER -----------------
+        # ---- Remove Member ----
         elif action == "remove_member":
-            user_id = request.POST.get("user_id")
-            member = get_object_or_404(GroupMember, group=group, user_id=user_id)
+            rem_user_id = request.POST.get("user_id")
+            member = get_object_or_404(GroupMember, group=group, user_id=rem_user_id)
             member.delete()
             messages.warning(request, "Member removed successfully.")
             return redirect('group_chat_view', group_id=group.id)
 
+        # ---- Create Group (optional handling here too) ----
+        elif action == "create_group":
+            group_name = request.POST.get("group_name")
+            member_ids = request.POST.getlist("members")
+
+            if group_name:
+                with transaction.atomic():
+                    new_group = Group.objects.create(name=group_name, created_by=current_user)
+                    GroupMember.objects.create(group=new_group, user=current_user)
+
+                    for uid in member_ids:
+                        u = User.objects.get(id=uid)
+                        GroupMember.objects.get_or_create(group=new_group, user=u)
+
+                messages.success(request, f"Group '{group_name}' created successfully!")
+                return redirect('teammember_chat')
+            else:
+                messages.error(request, "Please provide a group name.")
+
+    # ============================
+    # 🔹 DETECT PARTIAL LOAD (Modal)
+    # ============================
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('partial') == 'true':
+        return render(request, 'partials/group_chat_partial.html', {
+            "group": group,
+            "messages": messages_qs,
+            "members": members,
+            "all_users": all_users,
+            "current_user": current_user,
+            "users": users,
+            "extra_contacts": extra_contacts,
+            "groups": groups,
+            "role": "teammember",
+        })
+
+    # ============================
+    # 🔹 FULL PAGE RENDER
+    # ============================
     context = {
         "group": group,
         "messages": messages_qs,
         "members": members,
         "all_users": all_users,
-        "current_user": current_user,  # useful for template
+        "current_user": current_user,
+        "users": users,
+        "extra_contacts": extra_contacts,
+        "groups": groups,
+        "role": "teammember",
     }
     return render(request, 'group_chat.html', context)
-
 
 @never_cache
 def teammember_dashboard(request):
