@@ -7,6 +7,14 @@
     <title>Team Member Chat - Cybexel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+    
+<style>
+
+.custom-select option {
+    background-color: #2a3942;
+    color: white;
+}
+</style>
 </head>
 <body class="bg-black text-white font-sans select-none">
 
@@ -221,15 +229,17 @@ closeModal.addEventListener('click', () => modal.classList.add('hidden'));
 
         <h2 class="text-lg font-semibold text-green-400 pt-4">Add Member</h2>
         <form method="POST" class="flex space-x-2">
-            {% csrf_token %}
-            <select name="user_id" class="flex-1 bg-[#2a3942] border border-gray-600 rounded-lg text-white p-2 focus:outline-none">
-                {% for user in all_users %}
-                <option value="{{ user.id }}">{{ user.name }}</option>
-                {% endfor %}
-            </select>
-            <input type="hidden" name="action" value="add_member">
-            <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Add</button>
-        </form>
+    {% csrf_token %}
+    <select name="user_id" class="flex-1 bg-[#2a3942] border border-gray-600 rounded-lg text-white p-2 focus:outline-none custom-select">
+        {% for user in all_users %}
+        <option value="{{ user.id }}">{{ user.name }}</option>
+        {% endfor %}
+    </select>
+    <input type="hidden" name="action" value="add_member">
+    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Add</button>
+</form>
+
+
     </div>
 
     <!-- Chat Area -->
