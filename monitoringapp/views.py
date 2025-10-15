@@ -641,17 +641,40 @@ def chat_room(request, user_id):
     # Get or create chat room between current_user and other_user
     room = get_or_create_room(current_user, other_user)
 
-    # Fetch all active users except the current one
-    users = User.objects.filter(status='active').exclude(id=current_user.id).order_by('name')
+    # Fetch all users except the current one
+    users = User.objects.exclude(id=current_user.id).order_by('name')
 
-    # Optional extra contacts
-    extra_contacts = User.objects.filter(status='inactive')
+    # Optional extra contacts (if you want to separate inactive users)
+    extra_contacts = User.objects.filter(status='inactive').exclude(id=current_user.id)
 
     # Fetch messages in chronological order
     messages_list = room.messages.order_by("timestamp")
 
     # Fetch groups where current_user is a member
     groups = Group.objects.filter(memberships__user=current_user).distinct()
+
+    # Handle Create Group from modal (if you have modal in this page)
+    if request.method == "POST" and request.POST.get("action") == "create_group":
+        group_name = request.POST.get("group_name")
+        member_ids = request.POST.getlist("members")  # list of user ids
+
+        if group_name:
+            with transaction.atomic():
+                # Create group with required created_by field
+                group = Group.objects.create(name=group_name, created_by=current_user)
+
+                # Add creator as group member
+                GroupMember.objects.create(group=group, user=current_user)
+
+                # Add other selected members
+                for uid in member_ids:
+                    user = User.objects.get(id=uid)
+                    GroupMember.objects.get_or_create(group=group, user=user)
+
+            messages.success(request, f"Group '{group_name}' created successfully!")
+            return redirect("chat_room", user_id=user_id)
+        else:
+            messages.error(request, "Please provide a group name.")
 
     context = {
         "room": room,
@@ -660,12 +683,11 @@ def chat_room(request, user_id):
         "messages": messages_list,
         "users": users,
         "extra_contacts": extra_contacts,
-        "groups": groups,  # ✅ Include groups here
+        "groups": groups,
         "role": "chat_room",
     }
 
     return render(request, "chat_room.html", context)
-
 def group_chat_view(request, group_id):
     # ============================
     # 🔹 LOGIN CHECK

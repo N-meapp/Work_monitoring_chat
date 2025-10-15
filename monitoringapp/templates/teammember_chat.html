@@ -88,32 +88,96 @@
 
 
 
-        <!-- Group Chats Section -->
-<h3 class="font-semibold mb-2 flex justify-between items-center">
-  <span>Group Chats</span>
-  <!-- Button to Open Modal -->
-  <button id="openModal"
-          class="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700">
-    ➕ Create
-  </button>
-</h3>
 
-{% for group in groups %}
-<div class="flex justify-between items-center mb-1 bg-[#202c33] text-white p-2 rounded">
-    <span>{{ group.name }}</span>
-    <a href="{% url 'group_chat_view' group.id %}"
-       class="text-sm bg-green-600 px-2 py-1 rounded hover:bg-green-700">
-       💬 Chat
-    </a>
+  
+
+
+
+<!-- Groups Section -->
+<div class="mb-4">
+  <div class="flex justify-between items-center mb-2">
+    <h3 class="font-semibold text-lg text-white">Groups</h3>
+    <!-- + icon button for creating group -->
+    <button id="openModal" class="text-white hover:text-gray-300">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="space-y-2">
+    {% for group in groups %}
+      <a href="{% url 'group_chat_view' group.id %}" class="block bg-[#202c33] hover:bg-[#2a3b44] text-white p-3 rounded flex justify-between items-center">
+        <span class="font-medium">{{ group.name }}</span>
+       
+      </a>
+    {% empty %}
+      <p class="text-gray-400 text-sm">No group chats yet.</p>
+    {% endfor %}
+  </div>
 </div>
-{% empty %}
-<p class="text-gray-400">No group chats yet.</p>
-{% endfor %}
+
+
+
+
+    </div>
+
+
+
+
+
+
+  </div>
+
+<div id="chat-window" class="flex-1 flex flex-col">
+  <!-- Chat Header -->
+  <div class="flex items-center justify-between p-4 bg-[#202c33] text-white">
+    <div class="flex items-center">
+      {% if other_user.profile_image %}
+        <img id="chat-avatar" src="{{ other_user.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
+      {% else %}
+        <div class="w-10 h-10 rounded-full bg-gray-500 mr-3"></div>
+      {% endif %}
+      <div>
+        <p id="chat-username" class="font-medium">{{ other_user.name }}</p>
+        <p id="chat-userphone" class="text-xs text-gray-400">{{ other_user.phone }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-[#0b141a]">
+    {% for msg in messages %}
+      {% if msg.sender.id == current_user.id %}
+        <div class="text-right">
+          <p class="inline-block p-2 rounded-2xl text-sm bg-green-500 text-white">{{ msg.content }}</p>
+        </div>
+      {% else %}
+        <div class="text-left flex items-start space-x-2">
+          {% if msg.sender.profile_image %}
+            <img src="{{ msg.sender.profile_image.url }}" class="w-6 h-6 rounded-full" />
+          {% else %}
+            <div class="w-6 h-6 rounded-full bg-gray-500"></div>
+          {% endif %}
+          <p class="inline-block p-2 rounded-2xl text-sm bg-gray-700 text-white">{{ msg.content }}</p>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <!-- Input -->
+  <div class="p-4 bg-[#202c33] flex items-center">
+    <input id="chat-input" type="text"
+           placeholder="Type a message"
+           class="flex-1 px-3 py-2 rounded-full bg-[#111b21] text-white border-none focus:ring-0 text-sm" />
+    <button id="sendBtn" class="ml-3 bg-green-500 px-4 py-2 rounded-full text-white">Send</button>
+  </div>
+</div>
 
 
         <!-- Modal Overlay -->
 <div id="groupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-  <div class="bg-white rounded-lg w-96 p-6 mx-2 max-h-[90vh] overflow-y-auto">
+  <div class="bg-[#250f1e] rounded-lg w-96 p-6 mx-2 max-h-[90vh] overflow-y-auto">
     <h2 class="text-xl font-bold mb-4">Create New Group</h2>
     <form method="POST">
       {% csrf_token %}
@@ -131,7 +195,7 @@
 
       <div class="flex justify-end space-x-2">
         <button type="button" id="closeModal" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Create</button>
+        <button type="submit" class="bg-[#03314d] text-white px-4 py-2 rounded hover:bg-[#4f595f]">Create</button>
       </div>
     </form>
   </div>
@@ -149,24 +213,6 @@ openModal.addEventListener('click', () => modal.classList.remove('hidden'));
 closeModal.addEventListener('click', () => modal.classList.add('hidden'));
 </script>
 
-
-
-
-     
-
-
-
-
-
-
-    </div>
-  </div>
-
-  <!-- Right Chat Area -->
-  <div class="flex-1 flex items-center justify-center bg-gray-100 text-gray-600">
-    <p>Select a user to start chatting</p>
-  </div>
-</div>
 <script src="{% static 'js/admin.js' %}"></script>
 
 </body>

@@ -92,26 +92,28 @@
 
 
 
-<h3 class="font-semibold mb-2 flex justify-between items-center">
-  <span>Group Chats</span>
-  <!-- Button to Open Modal -->
-  <button id="openModal"
-          class="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700">
-    ➕ Create
-  </button>
-</h3>
+<div class="mb-4">
+  <div class="flex justify-between items-center mb-2">
+    <h3 class="font-semibold text-lg text-white">Groups</h3>
+    <!-- + icon button for creating group -->
+    <button id="openModal" class="text-white hover:text-gray-300">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+    </button>
+  </div>
 
-{% for group in groups %}
-<div class="flex justify-between items-center mb-1 bg-[#202c33] text-white p-2 rounded">
-    <span>{{ group.name }}</span>
-    <a href="{% url 'group_chat_view' group.id %}"
-       class="text-sm bg-green-600 px-2 py-1 rounded hover:bg-green-700">
-       💬 Chat
-    </a>
+  <div class="space-y-2">
+    {% for group in groups %}
+      <a href="{% url 'group_chat_view' group.id %}" class="block bg-[#202c33] hover:bg-[#2a3b44] text-white p-3 rounded flex justify-between items-center">
+        <span class="font-medium">{{ group.name }}</span>
+       
+      </a>
+    {% empty %}
+      <p class="text-gray-400 text-sm">No group chats yet.</p>
+    {% endfor %}
+  </div>
 </div>
-{% empty %}
-<p class="text-gray-400">No group chats yet.</p>
-{% endfor %}
 
 
 
@@ -250,7 +252,42 @@
 </script>
 
 
+<div id="groupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+  <div class="bg-[#250f1e] rounded-lg w-96 p-6 mx-2 max-h-[90vh] overflow-y-auto">
+    <h2 class="text-xl font-bold mb-4">Create New Group</h2>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_group">
 
+      <label class="block mb-2 font-semibold">Group Name:</label>
+      <input type="text" name="group_name" class="border p-2 rounded w-full mb-4" placeholder="Enter group name" required>
+
+      <label class="block mb-2 font-semibold">Add Members:</label>
+      <select name="members" multiple class="border p-2 rounded w-full mb-4">
+        {% for user in users %}
+        <option value="{{ user.id }}">{{ user.name }}</option>
+        {% endfor %}
+      </select>
+
+      <div class="flex justify-end space-x-2">
+        <button type="button" id="closeModal" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+        <button type="submit" class="bg-[#03314d] text-white px-4 py-2 rounded hover:bg-[#4f595f]">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+<!-- ✅ Modal JS -->
+<script>
+const openModal = document.getElementById('openModal');
+const closeModal = document.getElementById('closeModal');
+const modal = document.getElementById('groupModal');
+
+openModal.addEventListener('click', () => modal.classList.remove('hidden'));
+closeModal.addEventListener('click', () => modal.classList.add('hidden'));
+</script>
 
 
 <script src="{% static 'js/admin.js' %}"></script>
