@@ -152,26 +152,7 @@ closeModal.addEventListener('click', () => modal.classList.add('hidden'));
 
 
 
-      <!-- Extra Contacts -->
-      {% for contact in extra_contacts %}
-         <a href="{% url 'chat_room' contact.id %}" >
-        <div class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer">
-
-          {% if contact.profile_image %}
-            <img src="{{ contact.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
-          {% else %}
-            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white border border-white font-bold mr-3">
-              {{ contact.name|first|upper }}
-            </div>
-          {% endif %}
-          <div>
-            <p class="font-medium">{{ contact.name }}</p>
-            <p class="text-gray-400 text-sm">{{ contact.phone }}</p>
-          </div>
-
-        </div>
-               </a>
-      {% endfor %}
+     
 
 
 
