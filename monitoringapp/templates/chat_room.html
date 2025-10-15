@@ -88,7 +88,6 @@
 
 
 
-
       <!-- Extra Contacts -->
       {% for contact in extra_contacts %}
          <a href="{% url 'chat_room' contact.id %}" >
@@ -112,6 +111,26 @@
 
 
 
+<h3 class="font-semibold mb-2 flex justify-between items-center">
+  <span>Group Chats</span>
+  <!-- Button to Open Modal -->
+  <button id="openModal"
+          class="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700">
+    ➕ Create
+  </button>
+</h3>
+
+{% for group in groups %}
+<div class="flex justify-between items-center mb-1 bg-[#202c33] text-white p-2 rounded">
+    <span>{{ group.name }}</span>
+    <a href="{% url 'group_chat_view' group.id %}"
+       class="text-sm bg-green-600 px-2 py-1 rounded hover:bg-green-700">
+       💬 Chat
+    </a>
+</div>
+{% empty %}
+<p class="text-gray-400">No group chats yet.</p>
+{% endfor %}
 
 
 

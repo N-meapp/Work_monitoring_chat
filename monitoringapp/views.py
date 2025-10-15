@@ -641,25 +641,30 @@ def chat_room(request, user_id):
     # Get or create chat room between current_user and other_user
     room = get_or_create_room(current_user, other_user)
 
-    # Fetch all users except the current one for the left user list
+    # Fetch all active users except the current one
     users = User.objects.filter(status='active').exclude(id=current_user.id).order_by('name')
 
-    # Optional: extra contacts (for example, inactive users or other teams)
+    # Optional extra contacts
     extra_contacts = User.objects.filter(status='inactive')
 
     # Fetch messages in chronological order
-    messages = room.messages.order_by("timestamp")
+    messages_list = room.messages.order_by("timestamp")
+
+    # Fetch groups where current_user is a member
+    groups = Group.objects.filter(memberships__user=current_user).distinct()
 
     context = {
         "room": room,
         "current_user": current_user,
         "other_user": other_user,
-        "messages": messages,
+        "messages": messages_list,
         "users": users,
         "extra_contacts": extra_contacts,
+        "groups": groups,  # ✅ Include groups here
+        "role": "chat_room",
     }
-    return render(request, "chat_room.html", context)
 
+    return render(request, "chat_room.html", context)
 
 def group_chat_view(request, group_id):
     # ============================
