@@ -55,10 +55,18 @@
 
     <!-- Dynamic User List -->
     <div id="user-list" class="flex-1 overflow-y-auto">
-  <!-- Company Users -->
+  
   {% for user in users %}
-  <div onclick="openChat('{{ user.id }}','{{ user.name }}','{{ user.phone }}','{% if user.profile_image %}{{ user.profile_image.url }}{% else %}{% static "images/default.png" %}{% endif %}')"
-       class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer">
+<div 
+    class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer chat-user"
+    data-id="{{ user.id }}"
+    data-name="{{ user.name }}"
+    data-phone="{{ user.phone }}"
+    data-image="{% if user.profile_image %}{{ user.profile_image.url }}{% else %}{{ static("images/default.png") }}{% endif %}">
+
+</div>
+
+
        
     {% if user.profile_image %}
       <img src="{{ user.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
@@ -75,11 +83,10 @@
 
 
 
-{% for contact in extra_contacts %}
+<!-- {% for contact in extra_contacts %}
   <div onclick="openChat('extra-{{ contact.id }}','{{ contact.name }}','{{ contact.phone }}','')"
        class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer">
 
-    <!-- Avatar with first letter -->
     <div class="w-10 h-10 rounded-full flex items-center justify-center text-white border border-white font-bold mr-3"
          style="background-color: hsl({{ contact.id|add:50|divisibleby:360 }}, 70%, 50%)">
       {{ contact.name|first|upper }}
@@ -90,7 +97,7 @@
       <p class="text-gray-400 text-sm">{{ contact.phone }}</p>
     </div>
   </div>
-{% endfor %}
+{% endfor %} -->
 
 </div>
 
