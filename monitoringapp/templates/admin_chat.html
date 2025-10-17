@@ -55,17 +55,15 @@
 
     <!-- Dynamic User List -->
     <div id="user-list" class="flex-1 overflow-y-auto">
-  
+  <!-- Company Users -->
   {% for user in users %}
 <div 
     class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer chat-user"
     data-id="{{ user.id }}"
     data-name="{{ user.name }}"
     data-phone="{{ user.phone }}"
-    data-image="{% if user.profile_image %}{{ user.profile_image.url }}{% else %}{{ static("images/default.png") }}{% endif %}">
-
-</div>
-
+    data-image="{% if user.profile_image %}{{ user.profile_image.url }}{% else %}{% static 'images/default.png' %}{% endif %}">
+    <!-- User content here -->
 
        
     {% if user.profile_image %}
