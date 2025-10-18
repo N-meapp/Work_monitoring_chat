@@ -252,8 +252,51 @@ def delete_user(request, id):
 
 
 def admin_chat(request):
-    users = User.objects.exclude(id=request.user.id)  # company users
-    extra_contacts = ExtraContact.objects.all()       # manually added numbers
+     # Check session-based login
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return redirect("login_view")
+
+    current_user = get_object_or_404(User, id=user_id)
+
+    # Users list excluding current user
+    users = list(User.objects.exclude(id=current_user.id))
+    users.sort(key=lambda u: u.name.lower())
+
+    extra_contacts = ExtraContact.objects.all()
+    groups = Group.objects.filter(memberships__user=current_user).distinct()
+
+    # Handle Create Group from modal
+    if request.method == "POST" and request.POST.get("action") == "create_group":
+        group_name = request.POST.get("group_name")
+        member_ids = request.POST.getlist("members")  # list of user ids
+
+        if group_name:
+            with transaction.atomic():
+                # ✅ Create group with required created_by field
+                group = Group.objects.create(name=group_name, created_by=current_user)
+
+                # Add creator as group member
+                GroupMember.objects.create(group=group, user=current_user)
+
+                # Add other selected members
+                for uid in member_ids:
+                    user = User.objects.get(id=uid)
+                    GroupMember.objects.get_or_create(group=group, user=user)
+
+            messages.success(request, f"Group '{group_name}' created successfully!")
+            return redirect("admin_chat")
+        else:
+            messages.error(request, "Please provide a group name.")
+
+    context = {
+        "current_user": current_user,
+        "users": users,
+        "extra_contacts": extra_contacts,
+        "groups": groups,
+        "role": "admin_chat",
+    }
+
     return render(request, "admin_chat.html", {
         "users": users,
         "extra_contacts": extra_contacts
