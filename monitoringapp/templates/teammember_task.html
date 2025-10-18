@@ -63,35 +63,38 @@ select.status-select:focus {
     </div>
     <button class="menu-toggle md:hidden text-white text-2xl max-md:mt-[-9rem]">&times;</button>
   </div>
-  <nav class="select-none">
-    <ul class="space-y-8 text-sm">
-      <li>
-        <a href="{% url 'teammember_dashboard' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Team member Dashboard</a>
-      </li>
-      <li>
-        <a href="{% url 'teammember_project' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Team member Project</a>
-      </li>
-      <li>
-        <a href="{% url 'teammember_notepad' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Notepad</a>
-      </li>
-      <li>
-        <a href="{% url 'teammember_repository' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Knowledge Repository</a>
-      </li>
-      <li>
-        <a href="{% url 'teammember_profile' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Profile</a>
-      </li>
-      <li>
-        <a href="{% url 'teammember_task' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">My task</a>
-      </li>
-      <li>
-        <a href="{% url 'teammember_chat' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Chat</a>
-      </li>
-      <a href="{% url 'teammember_logout' %}" 
-       class="block py-2 px-4 rounded bg-red-600 text-white">
-       Logout
-    </a>
-    </ul>
-  </nav>
+ <nav class="select-none">
+  <ul class="space-y-8 text-sm">
+    <li>
+      <a href="{% url 'teammember_dashboard' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Team member Dashboard</a>
+    </li>
+    <li>
+      <a href="{% url 'teammember_project' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Team member Project</a>
+    </li>
+    <li>
+      <a href="{% url 'teammember_notepad' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Notepad</a>
+    </li>
+    <li>
+      <a href="{% url 'teammember_repository' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Knowledge Repository</a>
+    </li>
+    <li>
+      <a href="{% url 'teammember_profile' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Profile</a>
+    </li>
+    <li>
+      <a href="{% url 'teammember_task' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">My task</a>
+    </li>
+    <li>
+      <a href="{% url 'teammember_chat' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Chat</a>
+    </li>
+    <li>
+      <a href="https://meet.google.com/" target="_blank" class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
+    </li>
+    <li>
+      <a href="{% url 'teammember_logout' %}" class="block py-2 px-4 rounded bg-red-600 text-white">Logout</a>
+    </li>
+  </ul>
+</nav>
+
 </div>
 
 <button class="menu-toggle md:hidden fixed top-8 left-4 z-50 text-white p-2 rounded shadow-lg">

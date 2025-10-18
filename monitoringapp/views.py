@@ -30,10 +30,6 @@ from django.db import transaction
 
 
 
-
-
-
-
 def index(request):
     return render(request,'index.html')
 
@@ -59,27 +55,32 @@ def admin_logout(request):
     request.session.flush()
     return redirect("index")   # 👈 Redirect to your index page, not admin_login
 
+
 @never_cache
-@login_required(login_url='admin_login')
 def admin_dashboard(request):
-    if request.method == "POST":
-        if "add_department" in request.POST:
-            name = request.POST.get("department_name")
-            if name:
-                Department.objects.create(name=name)
-                return redirect('admin_dashboard')
+    # Check superuser OR management session
+    if (request.user.is_authenticated and request.user.is_superuser) or \
+       (request.session.get("position", "").strip().lower().replace(" ", "_") == "management"):
 
-        elif "add_team" in request.POST:
-            name = request.POST.get("team_name")
-            if name:
-                Team.objects.create(name=name)
-                return redirect('admin_dashboard')
+        if request.method == "POST":
+            if "add_department" in request.POST:
+                name = request.POST.get("department_name")
+                if name:
+                    Department.objects.create(name=name)
+                    return redirect('admin_dashboard')
 
-    departments = Department.objects.all()
-    teams = Team.objects.all()
-    return render(request, "admin_dashboard.html", {"departments": departments, "teams": teams})
+            elif "add_team" in request.POST:
+                name = request.POST.get("team_name")
+                if name:
+                    Team.objects.create(name=name)
+                    return redirect('admin_dashboard')
 
+        departments = Department.objects.all()
+        teams = Team.objects.all()
+        return render(request, "admin_dashboard.html", {"departments": departments, "teams": teams})
 
+    # Not allowed → redirect
+    return redirect("admin_login")
 
 
 
@@ -279,53 +280,49 @@ def add_contact(request):
 
 @never_cache
 def login_view(request):
-    # ✅ Already logged in → redirect
+    # Already logged in → redirect
     if request.session.get("user_id") and request.session.get("position"):
-        if request.session["position"] == "team_lead":
+        position = request.session["position"]
+        if position == "team_lead":
             return redirect("teamlead_dashboard")
+        elif position == "management":
+            return redirect("admin_dashboard")
         else:
             return redirect("teammember_dashboard")
 
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        position = request.POST.get("position")
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "").strip()
 
+        # Fetch user from DB
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             messages.error(request, "Invalid username or password")
             return render(request, "user_login.html")
 
-        # ✅ Check hashed password
+        # Check hashed password
         if not check_password(password, user.password):
             messages.error(request, "Invalid username or password")
             return render(request, "user_login.html")
 
-        # ✅ Check position
-        db_position = user.job_Position.lower().replace(" ", "_")
-        if db_position != position:
-            messages.error(request, "Incorrect position selected")
-            return render(request, "user_login.html")
+        # Normalize DB position
+        db_position = user.job_Position.strip().lower().replace(" ", "_")
 
-        # ✅ Mark user as active and update last login
-        user.status = "active"
-        user.last_login_time = timezone.now()
-        user.save()
-
-        # ✅ Store session data
+        # Save session
         request.session["user_id"] = user.id
         request.session["position"] = db_position
         request.session["login_time"] = str(timezone.now())
 
-        # ✅ Redirect based on role
+        # Redirect based on DB position only
         if db_position == "team_lead":
             return redirect("teamlead_dashboard")
+        elif db_position == "management":
+            return redirect("admin_dashboard")  # ← management goes here
         else:
             return redirect("teammember_dashboard")
 
     return render(request, "user_login.html")
-
 
 def get_logged_in_user_api(request):
     if request.session.get("user_id"):

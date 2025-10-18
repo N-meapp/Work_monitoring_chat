@@ -31,8 +31,14 @@
       <li><a href="{% url 'teamlead_repository' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Knowledge Repository</a></li>
       <li><a href="{% url 'teamlead_profile' %}" class="block py-2 px-4 rounded bg-white text-black">Profile</a></li>
       <li><a href="{% url 'teamlead_task' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">My task</a></li>
-      <li><a href="{% url 'teamlead_logout' %}" class="block py-2 px-4 rounded bg-[red] text-white">Logout</a></li>
+      
       <li><a href="{% url 'teamlead_chat' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Chat</a></li>
+      <li>
+      <a href="https://meet.google.com/" target="_blank" class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
+    </li>
+      <li>
+        <a href="{% url 'teamlead_logout' %}" class="block py-2 px-4 rounded bg-[red] text-white">Logout</a>
+      </li>
 
     </ul>
   </nav>
