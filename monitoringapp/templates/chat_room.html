@@ -10,7 +10,6 @@
 </head>
 <body class="bg-black text-white font-sans select-none">
 
-<!-- Sidebar -->
 <div id="sidebar"
      class="fixed top-0 left-0 h-full w-64 bg-[#250f1e] overflow-y-auto text-white p-6 z-50 transition-transform duration-300 ease-in-out">
   <div class="flex items-center justify-between mb-6">
@@ -21,6 +20,34 @@
   </div>
 
   <nav class="select-none">
+  {% if user_role == "team_lead" %}
+    <ul class="space-y-8 text-sm">
+      <li><a href="{% url 'teamlead_dashboard' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Team Lead Dashboard</a></li>
+      <li><a href="{% url 'teamlead_reports' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Reports</a></li>
+      <li><a href="{% url 'teamlead_project_assigning' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Project Assigning</a></li>
+      <li><a href="{% url 'teamlead_notepad' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Notepad</a></li>
+      <li><a href="{% url 'teamlead_repository' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Knowledge Repository</a></li>
+      <li><a href="{% url 'teamlead_profile' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Profile</a></li>
+      <li><a href="{% url 'teamlead_task' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">My task</a></li>
+      <li><a href="{% url 'teamlead_chat' %}" class="block py-2 px-4 rounded bg-white text-black">Chat</a></li>
+      <li>
+        <a href="https://meet.google.com/" target="_blank" class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
+      </li>
+      <li><a href="{% url 'teamlead_logout' %}" class="block py-2 px-4 rounded bg-[red] text-white">Logout</a></li>
+    </ul>
+
+  {% elif user_role == "management" %}
+    <ul class="space-y-6 text-sm">
+      <li><a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Dashboard</a></li>
+      <li><a href="{% url 'admin_usermanagement' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">User Management</a></li>
+      <li><a href="{% url 'admin_chat' %}" class="block py-2 px-4 rounded bg-white text-[#151a37]">Chat</a></li>
+      <li>
+        <a href="https://meet.google.com/" target="_blank" class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
+      </li>
+      <li><a href="{% url 'admin_logout' %}" class="block py-2 px-4 rounded bg-[red] text-white">Logout</a></li>
+    </ul>
+
+  {% else %}
     <ul class="space-y-8 text-sm">
       <li><a href="{% url 'teammember_dashboard' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Team member Dashboard</a></li>
       <li><a href="{% url 'teammember_project' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Team member Project</a></li>
@@ -29,12 +56,14 @@
       <li><a href="{% url 'teammember_profile' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Profile</a></li>
       <li><a href="{% url 'teammember_task' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">My task</a></li>
       <li><a href="{% url 'teammember_chat' %}" class="block py-2 px-4 rounded bg-white text-black">Chat</a></li>
-            <li>
-      <a href="https://meet.google.com/" target="_blank" class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
-    </li>
+      <li>
+        <a href="https://meet.google.com/" target="_blank" class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
+      </li>
       <li><a href="{% url 'teammember_logout' %}" class="block py-2 px-4 rounded bg-red-600 text-white">Logout</a></li>
     </ul>
-  </nav>
+  {% endif %}
+</nav>
+
 </div>
 <!-- Mobile Toggle -->
 <button class="menu-toggle md:hidden fixed top-8 left-4 z-50 text-white p-2 rounded shadow-lg">&#9776;</button>

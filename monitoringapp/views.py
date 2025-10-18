@@ -657,9 +657,8 @@ def teammember_chat(request):
 
 
 
-# ✅ Helper: get or create a private chat room between two users
 def get_or_create_room(user1, user2):
-    # Always order by ID to respect unique_together constraint
+    
     if user1.id > user2.id:
         user1, user2 = user2, user1
     room, created = ChatRoom.objects.get_or_create(user1=user1, user2=user2)
@@ -667,46 +666,30 @@ def get_or_create_room(user1, user2):
 
 
 
-
 def chat_room(request, user_id):
-    # Ensure user is logged in
     current_user_id = request.session.get("user_id")
     if not current_user_id:
         return redirect("login_view")
 
-    # Get current and selected users
     current_user = get_object_or_404(User, id=current_user_id)
     other_user = get_object_or_404(User, id=user_id)
-
-    # Get or create chat room between current_user and other_user
     room = get_or_create_room(current_user, other_user)
-
-    # Fetch all users except the current one
     users = User.objects.exclude(id=current_user.id).order_by('name')
-
-    # Optional extra contacts (if you want to separate inactive users)
     extra_contacts = User.objects.filter(status='inactive').exclude(id=current_user.id)
-
-    # Fetch messages in chronological order
     messages_list = room.messages.order_by("timestamp")
-
-    # Fetch groups where current_user is a member
     groups = Group.objects.filter(memberships__user=current_user).distinct()
 
-    # Handle Create Group from modal (if you have modal in this page)
+   
+    user_role = request.session.get("position")
+
     if request.method == "POST" and request.POST.get("action") == "create_group":
         group_name = request.POST.get("group_name")
-        member_ids = request.POST.getlist("members")  # list of user ids
+        member_ids = request.POST.getlist("members")
 
         if group_name:
             with transaction.atomic():
-                # Create group with required created_by field
                 group = Group.objects.create(name=group_name, created_by=current_user)
-
-                # Add creator as group member
                 GroupMember.objects.create(group=group, user=current_user)
-
-                # Add other selected members
                 for uid in member_ids:
                     user = User.objects.get(id=uid)
                     GroupMember.objects.get_or_create(group=group, user=user)
@@ -725,9 +708,13 @@ def chat_room(request, user_id):
         "extra_contacts": extra_contacts,
         "groups": groups,
         "role": "chat_room",
+        "user_role": user_role,   
     }
 
     return render(request, "chat_room.html", context)
+
+
+
 def group_chat_view(request, group_id):
     # ============================
     # 🔹 LOGIN CHECK
