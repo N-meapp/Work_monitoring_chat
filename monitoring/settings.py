@@ -17,7 +17,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-zgz&^hz5b4*!200p3!v#t*o!558*xq4p5!r0mskmj1%p!!)!^-'
 DEBUG = True
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'localhost', 'cybexeltechnologies.com']
 
 # Application definition
 INSTALLED_APPS = [
@@ -68,6 +69,10 @@ CHANNEL_LAYERS = {
     "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
 }
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://cybexeltechnologies.com",
+    "https://cybexeltechnologies.com"
+]
 
 # Database
 DATABASES = {
