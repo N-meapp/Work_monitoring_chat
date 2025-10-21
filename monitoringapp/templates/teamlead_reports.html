@@ -97,6 +97,18 @@
 {% endif %}
 
 
+<form method="GET" class="mb-4 flex flex-wrap gap-2 items-center">
+  <input type="date" name="date" value="{{ filter_date|default_if_none:'' }}"
+         class="px-2 py-1 border border-gray-300 rounded">
+  {% if show_all %}
+    <input type="hidden" name="all" value="1">
+  {% endif %}
+  <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded">Filter</button>
+  <a href="{% url 'admin_reports' %}{% if show_all %}?all=1{% endif %}"
+     class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded">Reset</a>
+</form>
+
+
 <!-- Morning Reports -->
 <div class="mb-10">
   <h2 class="text-xl md:text-2xl font-semibold mb-4">Morning Reports</h2>

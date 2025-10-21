@@ -253,11 +253,13 @@ def delete_user(request, id):
 
 
 
+@never_cache
 def admin_reports(request):
     show_all = request.GET.get('all')
     export = request.GET.get('export')
+    filter_date = request.GET.get('date')  # Added date filter
 
-    # Fetch reports
+    # Determine report queryset
     if show_all:
         morning_reports = MorningReport.objects.select_related('user').order_by('-created_at')
         evening_reports = EveningReport.objects.select_related('user').order_by('-created_at')
@@ -266,7 +268,12 @@ def admin_reports(request):
         morning_reports = MorningReport.objects.filter(created_at__date=today).select_related('user').order_by('-created_at')
         evening_reports = EveningReport.objects.filter(created_at__date=today).select_related('user').order_by('-created_at')
 
-    # Export to Excel
+    # Apply date filter if provided
+    if filter_date:
+        morning_reports = morning_reports.filter(created_at__date=filter_date)
+        evening_reports = evening_reports.filter(created_at__date=filter_date)
+
+    # Export filtered reports to Excel
     if export:
         if not morning_reports.exists() and not evening_reports.exists():
             messages.error(request, "No reports available to export.")
@@ -276,43 +283,34 @@ def admin_reports(request):
         ws = wb.active
         ws.title = "Team Reports"
 
-        # Headers
         headers = ["Report Type", "Date", "Time", "Name", "Team", "Department", "Report", "Status"]
         ws.append(headers)
 
-        # Function to add reports with properly formatted date and time strings
         def add_report_to_sheet(report_list, report_type):
             for report in report_list:
                 local_dt = timezone.localtime(report.created_at)
-                date_str = local_dt.strftime("%Y-%m-%d")   # Only date
-                time_str = local_dt.strftime("%I:%M %p")   # Only time (12-hour format)
-                
                 ws.append([
-                    report_type,          # Report Type
-                    date_str,             # Date as string
-                    time_str,             # Time as string
-                    getattr(report.user, "name", report.user.username),  # Name
+                    report_type,
+                    local_dt.strftime("%Y-%m-%d"),
+                    local_dt.strftime("%I:%M %p"),
+                    getattr(report.user, "name", report.user.username),
                     report.team,
                     report.department,
                     report.report_text,
-                    report.status
+                    getattr(report, "status", ""),
                 ])
 
-        # Add morning and evening reports
         add_report_to_sheet(morning_reports, "Morning")
         add_report_to_sheet(evening_reports, "Evening")
 
-        # Wrap long report text
         for row in ws.iter_rows(min_row=2, min_col=7, max_col=7):
             for cell in row:
                 cell.alignment = Alignment(wrap_text=True, vertical="top")
 
-        # Set column widths
         column_widths = [15, 15, 12, 20, 15, 20, 50, 15]
         for i, width in enumerate(column_widths, start=1):
             ws.column_dimensions[get_column_letter(i)].width = width
 
-        # Return Excel response
         response = HttpResponse(
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
@@ -320,16 +318,13 @@ def admin_reports(request):
         wb.save(response)
         return response
 
-    # Normal page render
     context = {
         'morning_reports': morning_reports,
         'evening_reports': evening_reports,
-        'show_all': show_all
+        'show_all': show_all,
+        'filter_date': filter_date,
     }
     return render(request, 'admin_reports.html', context)
-
-
-
 
 
 
@@ -408,6 +403,50 @@ def add_contact(request):
         return redirect("admin_chat")  # back to chat page
 
     return redirect("admin_chat")
+
+
+
+
+
+
+@never_cache
+def admin_profile(request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return redirect("index")
+
+    user = get_object_or_404(User, id=user_id)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        # AJAX Profile Image Update
+        if action == "edit_profile" and request.FILES.get("profile_image"):
+            user.profile_image = request.FILES["profile_image"]
+            user.save()
+            return JsonResponse({
+                "success": True,
+                "image_url": user.profile_image.url
+            })
+
+        # Normal form update for other details
+        elif action == "edit_profile":
+            user.name = request.POST.get("name")
+            user.email = request.POST.get("email")
+            user.phone = request.POST.get("phone")
+            user.work_location = request.POST.get("work_location")
+            user.save()
+            messages.success(request, "Profile updated successfully!")
+            return redirect("admin_profile")
+
+    # Render page
+    response = render(request, "admin_profile.html", {"user": user})
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    response["Expires"] = "0"
+    return response
+
+
 
 
 
@@ -1076,73 +1115,82 @@ def teammember_dashboard(request):
 
 @never_cache
 def teamlead_reports(request):
-    # ✅ Prevent KeyError if user is logged out
     if not request.session.get("user_id") or request.session.get("position") != "team_lead":
         return redirect("index")
 
     team_lead = get_object_or_404(User, id=request.session["user_id"])
     team_name = team_lead.team
+
     show_all = request.GET.get("all") == "1"
+    filter_date_str = request.GET.get("date")
 
-    if show_all:
-        morning_reports = MorningReport.objects.filter(team=team_name).order_by("-created_at")
-        evening_reports = EveningReport.objects.filter(team=team_name).order_by("-created_at")
+    if filter_date_str:
+        try:
+            filter_date = datetime.strptime(filter_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            messages.error(request, "Invalid date format.")
+            return redirect("teamlead_reports")
     else:
-        today = date.today()
-        morning_reports = MorningReport.objects.filter(team=team_name, created_at__date=today)
-        evening_reports = EveningReport.objects.filter(team=team_name, created_at__date=today)
+        filter_date = None
 
+    # Morning Reports
+    if show_all:
+        morning_reports = MorningReport.objects.filter(team=team_name)
+        evening_reports = EveningReport.objects.filter(team=team_name)
+    else:
+        today = datetime.today().date()
+        morning_reports = MorningReport.objects.filter(team=team_name, created_at__date=filter_date or today)
+        evening_reports = EveningReport.objects.filter(team=team_name, created_at__date=filter_date or today)
+
+    # Export to Excel
     if "export" in request.GET:
         if not morning_reports.exists() and not evening_reports.exists():
             messages.error(request, "No reports available to export.")
             return redirect("teamlead_reports")
-        else:
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "Team Reports"
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Team Reports"
+        headers = ["Date", "Time", "Report Type", "Name", "Team", "Department", "Report", "Status"]
+        ws.append(headers)
 
-            headers = ["Date", "Time", "Report Type", "Name", "Team", "Department", "Report", "Status"]
-            ws.append(headers)
+        def add_reports(report_list, report_type):
+            for report in report_list:
+                local_time = timezone.localtime(report.created_at)
+                ws.append([
+                    local_time.strftime("%Y-%m-%d"),
+                    local_time.strftime("%I:%M %p"),
+                    report_type,
+                    getattr(report.user, "name", report.user.username),
+                    report.team,
+                    report.department,
+                    report.report_text,
+                    report.status
+                ])
 
-            def add_reports(report_list, report_type):
-                for report in report_list:
-                    local_time = timezone.localtime(report.created_at)
-                    ws.append([
-                        local_time.strftime("%Y-%m-%d"),
-                        local_time.strftime("%I:%M %p"),
-                        report_type,
-                        getattr(report.user, "name", report.user.username),
-                        report.team,
-                        report.department,
-                        report.report_text,
-                        report.status
-                    ])
+        add_reports(morning_reports, "Morning")
+        add_reports(evening_reports, "Evening")
 
-            add_reports(morning_reports, "Morning")
-            add_reports(evening_reports, "Evening")
+        for row in ws.iter_rows(min_row=2, min_col=7, max_col=7):
+            for cell in row:
+                cell.alignment = Alignment(wrap_text=True, vertical="top")
 
-            for row in ws.iter_rows(min_row=2, min_col=7, max_col=7):
-                for cell in row:
-                    cell.alignment = Alignment(wrap_text=True, vertical="top")
+        column_widths = [15, 12, 12, 20, 15, 20, 50, 15]
+        for i, width in enumerate(column_widths, start=1):
+            ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = width
 
-            column_widths = [15, 12, 12, 20, 15, 20, 50, 15]
-            for i, width in enumerate(column_widths, start=1):
-                ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = width
-
-            response = HttpResponse(
-                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
-            response["Content-Disposition"] = 'attachment; filename="team_reports.xlsx"'
-            wb.save(response)
-            return response
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        response["Content-Disposition"] = 'attachment; filename="team_reports.xlsx"'
+        wb.save(response)
+        return response
 
     return render(request, "teamlead_reports.html", {
         "morning_reports": morning_reports,
         "evening_reports": evening_reports,
         "show_all": show_all,
     })
-
-
 
 @never_cache
 def teamlead_project_assigning(request):
