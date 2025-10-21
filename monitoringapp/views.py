@@ -24,6 +24,7 @@ from django.utils.cache import add_never_cache_headers
 from django.http import JsonResponse
 from django.db import transaction
 
+from django.db.models.functions import Lower, Trim
 
 
 
@@ -349,19 +350,33 @@ def login_view(request):
             messages.error(request, "Invalid username or password")
             return render(request, "user_login.html")
 
+        # ✅ Update user status and last login time (normalize status explicitly)
+        now = timezone.now()
+        user.status = "active"                # canonical value (no spaces, lowercase)
+        user.last_login_time = now
+
+        # if model happens to have is_active (boolean), keep it in sync
+        if hasattr(user, "is_active"):
+            try:
+                setattr(user, "is_active", True)
+            except Exception:
+                pass
+
+        user.save()
+
         # Normalize DB position
         db_position = user.job_Position.strip().lower().replace(" ", "_")
 
         # Save session
         request.session["user_id"] = user.id
         request.session["position"] = db_position
-        request.session["login_time"] = str(timezone.now())
+        request.session["login_time"] = str(now)
 
         # Redirect based on DB position only
         if db_position == "team_lead":
             return redirect("teamlead_dashboard")
         elif db_position == "management":
-            return redirect("admin_dashboard")  # ← management goes here
+            return redirect("admin_dashboard")
         else:
             return redirect("teammember_dashboard")
 
@@ -448,10 +463,9 @@ def reset_password(request):
 
 
 
-
 @never_cache
 def teamlead_dashboard(request):
-    # Redirect to index if not logged in
+    # Redirect to index if not logged in / not a team lead
     if not request.session.get("user_id") or request.session.get("position") != "team_lead":
         return redirect("index")
 
@@ -464,9 +478,9 @@ def teamlead_dashboard(request):
     # Login time
     login_time_str = request.session.get('login_time')
     login_time = parse_datetime(login_time_str) if login_time_str else None
+    if login_time and is_naive(login_time):
+        login_time = make_aware(login_time)
     if login_time:
-        if is_naive(login_time):
-            login_time = make_aware(login_time)
         login_time = localtime(login_time)
 
     # Post new announcement
@@ -475,20 +489,30 @@ def teamlead_dashboard(request):
         if message and message.strip():
             Announcement.objects.create(
                 title="Announcement",
-                message=message,
+                message=message.strip(),
                 created_by=team_lead,
                 created_at=timezone.now()
             )
         return redirect('teamlead_dashboard')
 
-    # Team members data
-    team_members = User.objects.filter(team=team_lead.team)
-    total_users = team_members.count()
-    active_members = team_members.filter(status="active").count()
-    inactive_members = team_members.filter(status="inactive").count()
+    # Base queryset: members in same team (exclude the team lead themselves)
+    team_members_qs = User.objects.filter(team=team_lead.team).exclude(id=team_lead.id)
 
-    # Most recent login
-    last_login_user = team_members.filter(last_login_time__isnull=False).order_by('-last_login_time').first()
+    # Compute counts robustly using Trim + Lower on status field (handles whitespace & case)
+    if hasattr(User, 'is_active'):
+        active_members = team_members_qs.filter(is_active=True).count()
+        inactive_members = team_members_qs.filter(is_active=False).count()
+    else:
+        annotated = team_members_qs.annotate(
+            status_clean=Lower(Trim('status'))
+        )
+        active_members = annotated.filter(status_clean='active').count()
+        inactive_members = annotated.filter(status_clean='inactive').count()
+
+    total_users = team_members_qs.count()
+
+    # Most recent login among team members (excluding lead)
+    last_login_user = team_members_qs.filter(last_login_time__isnull=False).order_by('-last_login_time').first()
     last_login = localtime(last_login_user.last_login_time) if last_login_user else None
 
     # Announcements from last 12 hours
@@ -498,11 +522,12 @@ def teamlead_dashboard(request):
         created_at__gte=cutoff
     ).order_by('-created_at')
 
-    # Format login/logout times
+    # Fetch members into a list then convert their datetimes to localtime for display
+    team_members = list(team_members_qs)
     for member in team_members:
         if member.last_login_time:
             member.last_login_time = localtime(member.last_login_time)
-        if member.last_logout_time:
+        if getattr(member, 'last_logout_time', None):
             member.last_logout_time = localtime(member.last_logout_time)
 
     response = render(request, 'teamlead_dashboard.html', {
@@ -515,10 +540,9 @@ def teamlead_dashboard(request):
         'last_login': last_login,
     })
 
-    # 🔒 Block browser from caching this page
+    # Block browser caching
     add_never_cache_headers(response)
     return response
-
 def is_within_time_range(start_time, end_time, now=None):
     now = now or timezone.localtime().time()
     return start_time <= now <= end_time
@@ -1541,6 +1565,11 @@ def teammember_logout(request):
             user = User.objects.get(id=request.session["user_id"])
             user.status = "inactive"
             user.last_logout_time = timezone.now()
+            if hasattr(user, "is_active"):
+                try:
+                    setattr(user, "is_active", False)
+                except Exception:
+                    pass
             user.save()
         except User.DoesNotExist:
             pass
@@ -1550,3 +1579,4 @@ def teammember_logout(request):
 
     # ✅ Redirect to index (not login page)
     return redirect("index")
+
