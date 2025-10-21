@@ -26,6 +26,7 @@ from django.db import transaction
 
 from django.db.models.functions import Lower, Trim
 
+from openpyxl.utils import get_column_letter
 
 
 
@@ -252,6 +253,95 @@ def delete_user(request, id):
 
 
 
+def admin_reports(request):
+    show_all = request.GET.get('all')
+    export = request.GET.get('export')
+
+    # Fetch reports
+    if show_all:
+        morning_reports = MorningReport.objects.select_related('user').order_by('-created_at')
+        evening_reports = EveningReport.objects.select_related('user').order_by('-created_at')
+    else:
+        today = timezone.now().date()
+        morning_reports = MorningReport.objects.filter(created_at__date=today).select_related('user').order_by('-created_at')
+        evening_reports = EveningReport.objects.filter(created_at__date=today).select_related('user').order_by('-created_at')
+
+    # Export to Excel
+    if export:
+        if not morning_reports.exists() and not evening_reports.exists():
+            messages.error(request, "No reports available to export.")
+            return redirect("admin_reports")
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Team Reports"
+
+        # Headers
+        headers = ["Report Type", "Date", "Time", "Name", "Team", "Department", "Report", "Status"]
+        ws.append(headers)
+
+        # Function to add reports with properly formatted date and time strings
+        def add_report_to_sheet(report_list, report_type):
+            for report in report_list:
+                local_dt = timezone.localtime(report.created_at)
+                date_str = local_dt.strftime("%Y-%m-%d")   # Only date
+                time_str = local_dt.strftime("%I:%M %p")   # Only time (12-hour format)
+                
+                ws.append([
+                    report_type,          # Report Type
+                    date_str,             # Date as string
+                    time_str,             # Time as string
+                    getattr(report.user, "name", report.user.username),  # Name
+                    report.team,
+                    report.department,
+                    report.report_text,
+                    report.status
+                ])
+
+        # Add morning and evening reports
+        add_report_to_sheet(morning_reports, "Morning")
+        add_report_to_sheet(evening_reports, "Evening")
+
+        # Wrap long report text
+        for row in ws.iter_rows(min_row=2, min_col=7, max_col=7):
+            for cell in row:
+                cell.alignment = Alignment(wrap_text=True, vertical="top")
+
+        # Set column widths
+        column_widths = [15, 15, 12, 20, 15, 20, 50, 15]
+        for i, width in enumerate(column_widths, start=1):
+            ws.column_dimensions[get_column_letter(i)].width = width
+
+        # Return Excel response
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response['Content-Disposition'] = 'attachment; filename="team_reports.xlsx"'
+        wb.save(response)
+        return response
+
+    # Normal page render
+    context = {
+        'morning_reports': morning_reports,
+        'evening_reports': evening_reports,
+        'show_all': show_all
+    }
+    return render(request, 'admin_reports.html', context)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def admin_chat(request):
      # Check session-based login
     user_id = request.session.get("user_id")
@@ -465,7 +555,7 @@ def reset_password(request):
 
 @never_cache
 def teamlead_dashboard(request):
-    # Redirect to index if not logged in / not a team lead
+    # 🔒 Restrict access
     if not request.session.get("user_id") or request.session.get("position") != "team_lead":
         return redirect("index")
 
@@ -475,74 +565,121 @@ def teamlead_dashboard(request):
         request.session.flush()
         return redirect("index")
 
-    # Login time
+    # 🕓 Parse login time
     login_time_str = request.session.get('login_time')
     login_time = parse_datetime(login_time_str) if login_time_str else None
-    if login_time and is_naive(login_time):
-        login_time = make_aware(login_time)
     if login_time:
+        if is_naive(login_time):
+            login_time = make_aware(login_time)
         login_time = localtime(login_time)
 
-    # Post new announcement
+    # 🕗 Define report submission windows
+    morning_start, morning_end = time(9, 30), time(10, 30)
+    evening_start, evening_end = time(17, 0), time(18, 15)
+
+    # 📝 Handle POST requests
     if request.method == "POST":
+        now_time = localtime().time()
+
+        # ✅ Handle morning report
+        if 'morning_submit' in request.POST:
+            if is_within_time_range(morning_start, morning_end, now_time):
+                report_text = request.POST.get("morning_report")
+                status = request.POST.get("morning_status")
+                if report_text and status:
+                    MorningReport.objects.create(
+                        user=team_lead,
+                        department=team_lead.department.name if team_lead.department else None,
+                        team=team_lead.team.name if team_lead.team else None,
+                        report_text=report_text,
+                        status=status
+                    )
+                    messages.success(request, "Morning report submitted successfully.")
+                    return redirect('teamlead_dashboard')
+            else:
+                messages.error(request, "You can only submit morning reports between 9:30 and 10:30 AM.")
+
+        # ✅ Handle evening report
+        elif 'evening_submit' in request.POST:
+            if is_within_time_range(evening_start, evening_end, now_time):
+                report_text = request.POST.get("evening_report")
+                status = request.POST.get("evening_status")
+                if report_text and status:
+                    EveningReport.objects.create(
+                        user=team_lead,
+                        department=team_lead.department.name if team_lead.department else None,
+                        team=team_lead.team.name if team_lead.team else None,
+                        report_text=report_text,
+                        status=status
+                    )
+                    messages.success(request, "Evening report submitted successfully.")
+                    return redirect('teamlead_dashboard')
+            else:
+                messages.error(request, "You can only submit evening reports between 5:00 and 6:15 PM.")
+
+        # 📢 Post new announcement
         message = request.POST.get("message")
         if message and message.strip():
             Announcement.objects.create(
                 title="Announcement",
                 message=message.strip(),
                 created_by=team_lead,
-                created_at=timezone.now()
+                created_at=now()
             )
-        return redirect('teamlead_dashboard')
+            return redirect('teamlead_dashboard')
 
-    # Base queryset: members in same team (exclude the team lead themselves)
+    # 🧮 Team member stats
     team_members_qs = User.objects.filter(team=team_lead.team).exclude(id=team_lead.id)
-
-    # Compute counts robustly using Trim + Lower on status field (handles whitespace & case)
-    if hasattr(User, 'is_active'):
-        active_members = team_members_qs.filter(is_active=True).count()
-        inactive_members = team_members_qs.filter(is_active=False).count()
-    else:
-        annotated = team_members_qs.annotate(
-            status_clean=Lower(Trim('status'))
-        )
-        active_members = annotated.filter(status_clean='active').count()
-        inactive_members = annotated.filter(status_clean='inactive').count()
-
+    annotated = team_members_qs.annotate(status_clean=Lower(Trim('status')))
+    active_members = annotated.filter(status_clean='active').count()
+    inactive_members = annotated.filter(status_clean='inactive').count()
     total_users = team_members_qs.count()
 
-    # Most recent login among team members (excluding lead)
+    # 🕒 Recent login among members
     last_login_user = team_members_qs.filter(last_login_time__isnull=False).order_by('-last_login_time').first()
     last_login = localtime(last_login_user.last_login_time) if last_login_user else None
 
-    # Announcements from last 12 hours
-    cutoff = timezone.now() - timedelta(hours=12)
+    # 📣 Announcements (last 12 hours)
+    cutoff = now() - timedelta(hours=12)
     announcements = Announcement.objects.filter(
         created_by=team_lead,
         created_at__gte=cutoff
     ).order_by('-created_at')
 
-    # Fetch members into a list then convert their datetimes to localtime for display
-    team_members = list(team_members_qs)
-    for member in team_members:
-        if member.last_login_time:
-            member.last_login_time = localtime(member.last_login_time)
-        if getattr(member, 'last_logout_time', None):
-            member.last_logout_time = localtime(member.last_logout_time)
+    # ⏰ Reports from last 24 hrs
+    report_cutoff = now() - timedelta(hours=24)
+    morning_reports = MorningReport.objects.filter(
+        user=team_lead,
+        created_at__gte=report_cutoff
+    ).values("report_text", "status", "created_at")
+    for r in morning_reports:
+        r["type"] = "Morning"
 
+    evening_reports = EveningReport.objects.filter(
+        user=team_lead,
+        created_at__gte=report_cutoff
+    ).values("report_text", "status", "created_at")
+    for r in evening_reports:
+        r["type"] = "Evening"
+
+    all_reports = sorted(list(morning_reports) + list(evening_reports), key=lambda x: x["created_at"], reverse=True)
+
+    # ✅ Render template
     response = render(request, 'teamlead_dashboard.html', {
         'total_users': total_users,
         'active_members': active_members,
         'inactive_members': inactive_members,
-        'team_members': team_members,
+        'team_members': team_members_qs,
         'announcements': announcements,
         'login_time': login_time,
         'last_login': last_login,
+        'morning_allowed': is_within_time_range(morning_start, morning_end),
+        'evening_allowed': is_within_time_range(evening_start, evening_end),
+        'all_reports': all_reports,
     })
 
-    # Block browser caching
-    add_never_cache_headers(response)
     return response
+
 def is_within_time_range(start_time, end_time, now=None):
     now = now or timezone.localtime().time()
     return start_time <= now <= end_time
@@ -1004,6 +1141,9 @@ def teamlead_reports(request):
         "evening_reports": evening_reports,
         "show_all": show_all,
     })
+
+
+
 @never_cache
 def teamlead_project_assigning(request):
     # 🔒 Prevent KeyError: check session before accessing user
@@ -1325,55 +1465,6 @@ def teammember_repository_delete(request, pk):
 def teamlead_profile(request):
     user_id = request.session.get("user_id")
     if not user_id:
-        return redirect("index")  # User not logged in, go to index page
-
-    user = get_object_or_404(User, id=user_id)
-
-    if request.method == "POST":
-        action = request.POST.get("action")
-
-        # Change Password
-        if action == "change_password":
-            current_password = request.POST.get("current_password")
-            new_password = request.POST.get("new_password")
-            confirm_password = request.POST.get("confirm_password")
-
-            if not check_password(current_password, user.password):
-                messages.error(request, "Current password is incorrect.")
-            elif new_password != confirm_password:
-                messages.error(request, "New password and confirmation do not match.")
-            else:
-                user.password = make_password(new_password)
-                user.save()
-                messages.success(request, "Password changed successfully!")
-
-        # Edit Profile
-        elif action == "edit_profile":
-            user.name = request.POST.get("name")
-            user.email = request.POST.get("email")
-            user.phone = request.POST.get("phone")
-            user.work_location = request.POST.get("work_location")
-
-            if "profile_image" in request.FILES:
-                user.profile_image = request.FILES["profile_image"]
-
-            user.save()
-            messages.success(request, "Profile updated successfully!")
-
-        return redirect("teamlead_profile")
-
-    # Render page with cache prevention
-    response = render(request, "teamlead_profile.html", {"user": user})
-    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    response["Pragma"] = "no-cache"
-    response["Expires"] = "0"
-    return response
-
-
-@never_cache
-def teammember_profile(request):
-    user_id = request.session.get("user_id")
-    if not user_id:   # 🔒 Not logged in → back to index
         return redirect("index")
 
     user = get_object_or_404(User, id=user_id)
@@ -1381,22 +1472,60 @@ def teammember_profile(request):
     if request.method == "POST":
         action = request.POST.get("action")
 
-        # ✅ Change Password
-        if action == "change_password":
-            current_password = request.POST.get("current_password")
-            new_password = request.POST.get("new_password")
-            confirm_password = request.POST.get("confirm_password")
+        # AJAX Profile Image Update
+        if action == "edit_profile" and request.FILES.get("profile_image"):
+            user.profile_image = request.FILES["profile_image"]
+            user.save()
+            return JsonResponse({
+                "success": True,
+                "image_url": user.profile_image.url
+            })
 
-            if not check_password(current_password, user.password):
-                messages.error(request, "Current password is incorrect.")
-            elif new_password != confirm_password:
-                messages.error(request, "New password and confirmation do not match.")
-            else:
-                user.password = make_password(new_password)
-                user.save()
-                messages.success(request, "Password changed successfully!")
+        # Normal form update for other details
+        elif action == "edit_profile":
+            user.name = request.POST.get("name")
+            user.email = request.POST.get("email")
+            user.phone = request.POST.get("phone")
+            user.work_location = request.POST.get("work_location")
+            user.save()
+            messages.success(request, "Profile updated successfully!")
+            return redirect("teamlead_profile")
 
-        # ✅ Edit Profile
+    # Render page
+    response = render(request, "teamlead_profile.html", {"user": user})
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    response["Expires"] = "0"
+    return response
+
+@never_cache
+def teammember_profile(request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return redirect("index")
+
+    user = get_object_or_404(User, id=user_id)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        # Profile image AJAX upload
+        if action == "edit_profile" and request.FILES.get("profile_image"):
+            user.profile_image = request.FILES["profile_image"]
+            user.save()
+
+            # Check if AJAX
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({
+                    "success": True,
+                    "image_url": user.profile_image.url
+                })
+
+            # fallback redirect for normal form submit
+            messages.success(request, "Profile image updated successfully!")
+            return redirect("teammember_profile")
+
+        # Normal form update (other details)
         elif action == "edit_profile":
             user.name = request.POST.get("name")
             user.email = request.POST.get("email")
@@ -1408,11 +1537,9 @@ def teammember_profile(request):
 
             user.save()
             messages.success(request, "Profile updated successfully!")
-
-        return redirect("teammember_profile")
+            return redirect("teammember_profile")
 
     return render(request, "teammember_profile.html", {"user": user})
-
 @never_cache
 def teammember_task(request):
     user_id = request.session.get("user_id")

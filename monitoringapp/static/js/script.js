@@ -1,36 +1,44 @@
 const menuToggle = document.getElementById("menu-toggle");
-  const menuClose = document.getElementById("menu-close");
-  const mobileMenu = document.getElementById("mobile-menu");
-  const overlay = document.getElementById("overlay");
-  const navbar = document.getElementById("navbar");
+const menuClose = document.getElementById("menu-close");
+const mobileMenu = document.getElementById("mobile-menu");
+const overlay = document.getElementById("overlay");
+const navbar = document.getElementById("navbar");
+const mobileLinks = document.querySelectorAll(".mobile-link");
 
-  // Open menu
-  menuToggle.addEventListener("click", () => {
-    mobileMenu.classList.remove("translate-x-full");
-    overlay.classList.remove("hidden");
-  });
+// Open menu
+menuToggle.addEventListener("click", () => {
+  mobileMenu.classList.remove("translate-x-full");
+  overlay.classList.remove("hidden");
+});
 
-  // Close menu (button)
-  menuClose.addEventListener("click", () => {
+// Close menu (button)
+menuClose.addEventListener("click", () => {
+  mobileMenu.classList.add("translate-x-full");
+  overlay.classList.add("hidden");
+});
+
+// Close menu (overlay)
+overlay.addEventListener("click", () => {
+  mobileMenu.classList.add("translate-x-full");
+  overlay.classList.add("hidden");
+});
+
+// Close menu when any link is clicked
+mobileLinks.forEach(link => {
+  link.addEventListener("click", () => {
     mobileMenu.classList.add("translate-x-full");
     overlay.classList.add("hidden");
   });
+});
 
-  // Close menu (overlay)
-  overlay.addEventListener("click", () => {
-    mobileMenu.classList.add("translate-x-full");
-    overlay.classList.add("hidden");
-  });
-
-  // Change navbar bg on scroll
-  window.addEventListener("scroll", () => {
-    if (window.scrollY > 50) {
-      navbar.classList.add("bg-black/70", "backdrop-blur-md", "shadow-md");
-    } else {
-      navbar.classList.remove("bg-black/70", "backdrop-blur-md", "shadow-md");
-    }
-  });
-
+// Change navbar bg on scroll
+window.addEventListener("scroll", () => {
+  if (window.scrollY > 50) {
+    navbar.classList.add("bg-black/70", "backdrop-blur-md", "shadow-md");
+  } else {
+    navbar.classList.remove("bg-black/70", "backdrop-blur-md", "shadow-md");
+  }
+});
 
 
 

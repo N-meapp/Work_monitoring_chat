@@ -9,7 +9,23 @@
   <title>Team Lead Dashboard - Cybexel</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="{% static 'css/admin.css' %}">
-  
+   <style>
+  /* Style the select box */
+  select.morning-select {
+    background-color: #000 !important;
+    color: #fff !important;
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  /* Style the options inside dropdown */
+  select.morning-select option {
+    background-color: #000 !important;
+    color: #fff !important;
+  }
+</style>
+
 </head>
 <body class="bg-black text-white font-sans select-none">
 
@@ -96,6 +112,100 @@
 
     </div>
   </div>
+
+
+
+
+
+<div class="bg-[#250f1e]/40 p-6 rounded-2xl shadow mb-6">
+  <h2 class="text-lg font-semibold mb-3 text-white">Submit Morning Report</h2>
+  {% if morning_allowed %}
+    <form method="POST" class="space-y-3">
+      {% csrf_token %}
+      <textarea name="morning_report" rows="4"
+        class="w-full p-3 rounded-lg bg-black border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-600"
+        placeholder="Write your morning report..."></textarea>
+
+     
+<select name="morning_status" class="morning-select w-full border border-white">
+  <option value="Pending">Pending</option>
+  <option value="In Progress">In Progress</option>
+  <option value="Completed">Completed</option>
+</select>
+
+
+      <button type="submit" name="morning_submit"
+        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold">
+        Submit Morning Report
+      </button>
+    </form>
+  {% else %}
+    <p class="text-gray-400">Morning report submission is only allowed between 9:30 and 10:30 AM.</p>
+  {% endif %}
+</div>
+
+<div class="bg-[#250f1e]/40 p-6 rounded-2xl shadow mb-6">
+  <h2 class="text-lg font-semibold mb-3 text-white">Submit Evening Report</h2>
+  {% if evening_allowed %}
+    <form method="POST" class="space-y-3">
+      {% csrf_token %}
+      <textarea name="evening_report" rows="4"
+        class="w-full p-3 rounded-lg bg-black border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-600"
+        placeholder="Write your evening report..."></textarea>
+
+      <select name="evening_status" class="morning-select w-full border border-white">
+  <option value="Pending">Pending</option>
+  <option value="In Progress">In Progress</option>
+  <option value="Completed">Completed</option>
+</select>
+
+
+      <button type="submit" name="evening_submit"
+        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold">
+        Submit Evening Report
+      </button>
+    </form>
+  {% else %}
+    <p class="text-gray-400">Evening report submission is only allowed between 5:00 and 6:15 PM.</p>
+  {% endif %}
+</div>
+<!-- 📊 Submitted Reports (Last 24 Hrs) -->
+<div class="bg-[#250f1e]/40 p-6 rounded-2xl shadow mb-6">
+  <h2 class="text-lg font-semibold mb-3 text-white">Your Reports (Last 24 Hrs)</h2>
+
+  {% if all_reports %}
+    <div class="overflow-x-auto">
+      <table class="w-full border border-gray-700 text-gray-200 text-sm rounded-lg overflow-hidden">
+        <thead class="bg-black/60 text-white">
+          <tr>
+            <th class="px-4 py-2 text-left">Type</th>
+            <th class="px-4 py-2 text-left">Report</th>
+            <th class="px-4 py-2 text-left">Status</th>
+            <th class="px-4 py-2 text-left">Submitted At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in all_reports %}
+            <tr class="border-t border-gray-700 hover:bg-black/30">
+              <td class="px-4 py-2">{{ report.type }}</td>
+              <td class="px-4 py-2">{{ report.report_text }}</td>
+              <td class="px-4 py-2">{{ report.status }}</td>
+              <td class="px-4 py-2">{{ report.created_at|date:"M d, Y H:i A" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-gray-400">No reports submitted in the last 24 hours.</p>
+  {% endif %}
+</div>
+
+
+
+
+
+
 
   <div class="border-4 border-[#250f1e] p-6 rounded-lg shadow-md mt-20">
     <h2 class="text-xl font-semibold mb-4">Announcements</h2>

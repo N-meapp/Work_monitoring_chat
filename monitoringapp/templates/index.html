@@ -59,23 +59,28 @@
     <button id="menu-close" class="absolute top-4 right-8 text-sm text-black hover:text-[#6c024d]">
       ✕
     </button>
-   <a href="#home" class="mobile-link nav-link mt-12 text-[#6c024d] transition">Home</a>
-<a href="#about" class="mobile-link nav-link text-black hover:text-[#6c024d] transition">About</a>
-<a href="#services" class="mobile-link nav-link text-black hover:text-[#6c024d] transition">Services</a>
-<a href="#faq" class="mobile-link nav-link text-black hover:text-[#6c024d] transition">Faq</a>
+    
+    <a href="#home" class="mobile-link nav-link mt-12 text-[#6c024d] transition">Home</a>
+    <a href="#about" class="mobile-link nav-link text-black hover:text-[#6c024d] transition">About</a>
+    <a href="#services" class="mobile-link nav-link text-black hover:text-[#6c024d] transition">Services</a>
+    <a href="#faq" class="mobile-link nav-link text-black hover:text-[#6c024d] transition">Faq</a>
 
-{% if logged_in_user %}
-  <span class="hidden md:inline text-white font-semibold">
-    👋 {{ logged_in_user.username }}
-  </span>
-{% else %}
-  <a href="{% url 'login' %}" 
-     class="hidden md:inline px-5 py-2 bg-[#6c024d] text-white rounded-md hover:bg-[#5c2a4d] transition">
-    Login
-  </a>
-{% endif %}
+    <!-- Mobile Login / User Greeting -->
+    {% if logged_in_user %}
+      <a href="{% if is_team_lead %}{% url 'teamlead_dashboard' %}{% else %}{% url 'teammember_dashboard' %}{% endif %}" 
+         class="px-5 py-2 bg-[#6c024d] text-white rounded-md hover:bg-[#5c2a4d] transition text-center">
+        👋 {{ logged_in_user.name }}
+      </a>
+    {% else %}
+      <a href="{% url 'login' %}" 
+         class="px-5 py-2 bg-[#6c024d] text-white rounded-md hover:bg-[#5c2a4d] transition text-center">
+        Login
+      </a>
+    {% endif %}
+    
   </div>
 </div>
+
 
 
 
@@ -145,7 +150,7 @@ CLARITY & CONTROL IN EVERY WORKFLOW      </h1>
   <span>We help organizations</span> gain complete clarity, seamless control and improved efficiency over every workflow, ensuring that tasks are monitored, tracked and delivered with precision.
 </p>
   </div>
-<hr class="my-[-4.3rem] md:my-6 border-t-1 border-gray-500">
+<hr class="md:my-[-4.3rem]  border-t-1 border-gray-500">
 
   <div class=" w-full h-auto flex flex-col md:flex-row justify-between gap-0 md:gap-20 items-center">
     <div class=" w-full h-full max-md:mt-[6rem]">
