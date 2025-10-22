@@ -38,14 +38,24 @@
 
   {% elif user_role == "management" %}
     <ul class="space-y-6 text-sm">
-      <li><a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Dashboard</a></li>
-      <li><a href="{% url 'admin_usermanagement' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">User Management</a></li>
-      <li><a href="{% url 'admin_chat' %}" class="block py-2 px-4 rounded bg-white text-[#151a37]">Chat</a></li>
-      <li>
-        <a href="https://meet.google.com/" target="_blank" class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
+        <li><a href="{% url 'admin_dashboard' %}"
+            class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Dashboard</a></li>
+        <li><a href="{% url 'admin_usermanagement' %}"
+            class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">User Management</a></li>
+            <li>
+        <a href="{% url 'admin_reports' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Reports</a>
       </li>
-      <li><a href="{% url 'admin_logout' %}" class="block py-2 px-4 rounded bg-[red] text-white">Logout</a></li>
-    </ul>
+<li>
+        <a href="{% url 'admin_chat' %}" class="block py-2 px-4 rounded bg-white text-[#151a37]">Chat</a>
+      </li>
+      <li>
+        <a href="{% url 'admin_profile' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Profile</a>
+      </li>        <li>
+          <a href="https://meet.google.com/" target="_blank"
+            class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
+        </li>
+        <li><a href="{% url 'admin_logout' %}" class="block py-2 px-4 rounded bg-[red] text-white">Logout</a></li>
+      </ul>
 
   {% else %}
     <ul class="space-y-8 text-sm">
@@ -69,7 +79,7 @@
 <button class="menu-toggle md:hidden fixed top-8 left-4 z-50 text-white p-2 rounded shadow-lg">&#9776;</button>
 
 <!-- Main Content -->
-<div class="flex h-screen ml-64">  <!-- 👈 Added ml-64 to move right of sidebar -->
+<div class="flex h-screen md:ml-64">  <!-- 👈 Added ml-64 to move right of sidebar -->
 
   <!-- Left Chat List -->
   <div class="w-80 bg-[#111b21] text-white flex flex-col">

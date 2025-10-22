@@ -27,6 +27,7 @@ from django.db import transaction
 from django.db.models.functions import Lower, Trim
 
 from openpyxl.utils import get_column_letter
+from django.utils.dateparse import parse_time
 
 
 
@@ -336,36 +337,41 @@ def admin_reports(request):
 
 
 
-
 def admin_chat(request):
-     # Check session-based login
+    # ============================
+    # 🔹 LOGIN CHECK
+    # ============================
     user_id = request.session.get("user_id")
     if not user_id:
         return redirect("login_view")
 
     current_user = get_object_or_404(User, id=user_id)
 
-    # Users list excluding current user
+    # ============================
+    # 🔹 USERS & GROUPS
+    # ============================
     users = list(User.objects.exclude(id=current_user.id))
     users.sort(key=lambda u: u.name.lower())
 
     extra_contacts = ExtraContact.objects.all()
     groups = Group.objects.filter(memberships__user=current_user).distinct()
 
-    # Handle Create Group from modal
+    # ============================
+    # 🔹 HANDLE GROUP CREATION
+    # ============================
     if request.method == "POST" and request.POST.get("action") == "create_group":
         group_name = request.POST.get("group_name")
         member_ids = request.POST.getlist("members")  # list of user ids
 
         if group_name:
             with transaction.atomic():
-                # ✅ Create group with required created_by field
+                # Create group
                 group = Group.objects.create(name=group_name, created_by=current_user)
 
-                # Add creator as group member
+                # Add creator
                 GroupMember.objects.create(group=group, user=current_user)
 
-                # Add other selected members
+                # Add selected members
                 for uid in member_ids:
                     user = User.objects.get(id=uid)
                     GroupMember.objects.get_or_create(group=group, user=user)
@@ -375,6 +381,9 @@ def admin_chat(request):
         else:
             messages.error(request, "Please provide a group name.")
 
+    # ============================
+    # 🔹 CONTEXT FOR TEMPLATE
+    # ============================
     context = {
         "current_user": current_user,
         "users": users,
@@ -383,11 +392,7 @@ def admin_chat(request):
         "role": "admin_chat",
     }
 
-    return render(request, "admin_chat.html", {
-        "users": users,
-        "extra_contacts": extra_contacts
-    })
-
+    return render(request, "admin_chat.html", context)
 def add_contact(request):
     if request.method == "POST":
         name = request.POST.get("name")
@@ -612,15 +617,64 @@ def teamlead_dashboard(request):
             login_time = make_aware(login_time)
         login_time = localtime(login_time)
 
-    # 🕗 Define report submission windows
-    morning_start, morning_end = time(9, 30), time(10, 30)
-    evening_start, evening_end = time(17, 0), time(18, 15)
+    # 🕗 Fetch configurable report submission windows from DB
+    morning_setting = ReportTimeSetting.objects.filter(report_type='morning').first()
+    evening_setting = ReportTimeSetting.objects.filter(report_type='evening').first()
+
+    # Default/fallback times
+    morning_start = morning_setting.start_time if morning_setting else time(9, 30)
+    morning_end = morning_setting.end_time if morning_setting else time(10, 30)
+    evening_start = evening_setting.start_time if evening_setting else time(17, 0)
+    evening_end = evening_setting.end_time if evening_setting else time(18, 15)
 
     # 📝 Handle POST requests
     if request.method == "POST":
         now_time = localtime().time()
 
-        # ✅ Handle morning report
+        # ------------------------------
+        # Update Morning Report Time
+        # ------------------------------
+        if 'update_morning_time' in request.POST:
+            morning_start_str = request.POST.get('morning_start')
+            morning_end_str = request.POST.get('morning_end')
+            if morning_start_str and morning_end_str:
+                # Save or update DB
+                if morning_setting:
+                    morning_setting.start_time = parse_time(morning_start_str)
+                    morning_setting.end_time = parse_time(morning_end_str)
+                    morning_setting.save()
+                else:
+                    ReportTimeSetting.objects.create(
+                        report_type='morning',
+                        start_time=parse_time(morning_start_str),
+                        end_time=parse_time(morning_end_str)
+                    )
+                messages.success(request, "Morning report time updated successfully.")
+                return redirect('teamlead_dashboard')
+
+        # ------------------------------
+        # Update Evening Report Time
+        # ------------------------------
+        if 'update_evening_time' in request.POST:
+            evening_start_str = request.POST.get('evening_start')
+            evening_end_str = request.POST.get('evening_end')
+            if evening_start_str and evening_end_str:
+                if evening_setting:
+                    evening_setting.start_time = parse_time(evening_start_str)
+                    evening_setting.end_time = parse_time(evening_end_str)
+                    evening_setting.save()
+                else:
+                    ReportTimeSetting.objects.create(
+                        report_type='evening',
+                        start_time=parse_time(evening_start_str),
+                        end_time=parse_time(evening_end_str)
+                    )
+                messages.success(request, "Evening report time updated successfully.")
+                return redirect('teamlead_dashboard')
+
+        # ------------------------------
+        # Handle Morning Report Submission
+        # ------------------------------
         if 'morning_submit' in request.POST:
             if is_within_time_range(morning_start, morning_end, now_time):
                 report_text = request.POST.get("morning_report")
@@ -636,9 +690,14 @@ def teamlead_dashboard(request):
                     messages.success(request, "Morning report submitted successfully.")
                     return redirect('teamlead_dashboard')
             else:
-                messages.error(request, "You can only submit morning reports between 9:30 and 10:30 AM.")
+                messages.error(
+                    request,
+                    f"You can only submit morning reports between {morning_start.strftime('%I:%M %p')} and {morning_end.strftime('%I:%M %p')}."
+                )
 
-        # ✅ Handle evening report
+        # ------------------------------
+        # Handle Evening Report Submission
+        # ------------------------------
         elif 'evening_submit' in request.POST:
             if is_within_time_range(evening_start, evening_end, now_time):
                 report_text = request.POST.get("evening_report")
@@ -654,9 +713,14 @@ def teamlead_dashboard(request):
                     messages.success(request, "Evening report submitted successfully.")
                     return redirect('teamlead_dashboard')
             else:
-                messages.error(request, "You can only submit evening reports between 5:00 and 6:15 PM.")
+                messages.error(
+                    request,
+                    f"You can only submit evening reports between {evening_start.strftime('%I:%M %p')} and {evening_end.strftime('%I:%M %p')}."
+                )
 
-        # 📢 Post new announcement
+        # ------------------------------
+        # Handle Announcements
+        # ------------------------------
         message = request.POST.get("message")
         if message and message.strip():
             Announcement.objects.create(
@@ -667,44 +731,34 @@ def teamlead_dashboard(request):
             )
             return redirect('teamlead_dashboard')
 
-    # 🧮 Team member stats
+    # ------------------------------
+    # Team Member Stats & Reports
+    # ------------------------------
     team_members_qs = User.objects.filter(team=team_lead.team).exclude(id=team_lead.id)
     annotated = team_members_qs.annotate(status_clean=Lower(Trim('status')))
     active_members = annotated.filter(status_clean='active').count()
     inactive_members = annotated.filter(status_clean='inactive').count()
     total_users = team_members_qs.count()
 
-    # 🕒 Recent login among members
     last_login_user = team_members_qs.filter(last_login_time__isnull=False).order_by('-last_login_time').first()
     last_login = localtime(last_login_user.last_login_time) if last_login_user else None
 
-    # 📣 Announcements (last 12 hours)
     cutoff = now() - timedelta(hours=12)
     announcements = Announcement.objects.filter(
         created_by=team_lead,
         created_at__gte=cutoff
     ).order_by('-created_at')
 
-    # ⏰ Reports from last 24 hrs
     report_cutoff = now() - timedelta(hours=24)
-    morning_reports = MorningReport.objects.filter(
-        user=team_lead,
-        created_at__gte=report_cutoff
-    ).values("report_text", "status", "created_at")
-    for r in morning_reports:
-        r["type"] = "Morning"
+    morning_reports = MorningReport.objects.filter(user=team_lead, created_at__gte=report_cutoff).values("report_text", "status", "created_at")
+    for r in morning_reports: r["type"] = "Morning"
 
-    evening_reports = EveningReport.objects.filter(
-        user=team_lead,
-        created_at__gte=report_cutoff
-    ).values("report_text", "status", "created_at")
-    for r in evening_reports:
-        r["type"] = "Evening"
+    evening_reports = EveningReport.objects.filter(user=team_lead, created_at__gte=report_cutoff).values("report_text", "status", "created_at")
+    for r in evening_reports: r["type"] = "Evening"
 
     all_reports = sorted(list(morning_reports) + list(evening_reports), key=lambda x: x["created_at"], reverse=True)
 
-    # ✅ Render template
-    response = render(request, 'teamlead_dashboard.html', {
+    return render(request, 'teamlead_dashboard.html', {
         'total_users': total_users,
         'active_members': active_members,
         'inactive_members': inactive_members,
@@ -715,12 +769,15 @@ def teamlead_dashboard(request):
         'morning_allowed': is_within_time_range(morning_start, morning_end),
         'evening_allowed': is_within_time_range(evening_start, evening_end),
         'all_reports': all_reports,
+        'morning_start': morning_start,
+        'morning_end': morning_end,
+        'evening_start': evening_start,
+        'evening_end': evening_end,
     })
 
-    return response
 
 def is_within_time_range(start_time, end_time, now=None):
-    now = now or timezone.localtime().time()
+    now = now or localtime().time()
     return start_time <= now <= end_time
 
 
@@ -916,45 +973,33 @@ def chat_room(request, user_id):
 
 
 def group_chat_view(request, group_id):
-    # ============================
-    # 🔹 LOGIN CHECK
-    # ============================
     user_id = request.session.get("user_id")
     if not user_id:
         return redirect("login_view")
     current_user = get_object_or_404(User, id=user_id)
 
-    # ============================
-    # 🔹 CORE GROUP DATA
-    # ============================
+    # ✅ Fetch user role (assuming you have a field like `role` or `user_type`)
+    user_role = getattr(current_user, "role", "teammember")  # default fallback
+
     group = get_object_or_404(Group, id=group_id)
     messages_qs = GroupMessage.objects.filter(group=group).order_by('timestamp')
     members = GroupMember.objects.filter(group=group).select_related('user')
     all_users = User.objects.exclude(id__in=[m.user.id for m in members])
 
-    # ============================
-    # 🔹 ADDITIONAL DATA (from teammember_chat)
-    # ============================
     users = list(User.objects.exclude(id=current_user.id))
     users.sort(key=lambda u: u.name.lower())
     extra_contacts = ExtraContact.objects.all()
     groups = Group.objects.filter(memberships__user=current_user).distinct()
 
-    # ============================
-    # 🔹 HANDLE GROUP MANAGEMENT
-    # ============================
+    # 🔹 Handle group management actions...
     if request.method == "POST":
         action = request.POST.get("action")
-
-        # ---- Add Member ----
         if action == "add_member":
             new_user_id = request.POST.get("user_id")
             new_user = get_object_or_404(User, id=new_user_id)
             GroupMember.objects.get_or_create(group=group, user=new_user)
             messages.success(request, f"{new_user.name} added to {group.name}.")
             return redirect('group_chat_view', group_id=group.id)
-
-        # ---- Remove Member ----
         elif action == "remove_member":
             rem_user_id = request.POST.get("user_id")
             member = get_object_or_404(GroupMember, group=group, user_id=rem_user_id)
@@ -962,28 +1007,7 @@ def group_chat_view(request, group_id):
             messages.warning(request, "Member removed successfully.")
             return redirect('group_chat_view', group_id=group.id)
 
-        # ---- Create Group (optional handling here too) ----
-        elif action == "create_group":
-            group_name = request.POST.get("group_name")
-            member_ids = request.POST.getlist("members")
-
-            if group_name:
-                with transaction.atomic():
-                    new_group = Group.objects.create(name=group_name, created_by=current_user)
-                    GroupMember.objects.create(group=new_group, user=current_user)
-
-                    for uid in member_ids:
-                        u = User.objects.get(id=uid)
-                        GroupMember.objects.get_or_create(group=new_group, user=u)
-
-                messages.success(request, f"Group '{group_name}' created successfully!")
-                return redirect('teammember_chat')
-            else:
-                messages.error(request, "Please provide a group name.")
-
-    # ============================
-    # 🔹 DETECT PARTIAL LOAD (Modal)
-    # ============================
+    # 🔹 AJAX partial load (Modal)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('partial') == 'true':
         return render(request, 'partials/group_chat_partial.html', {
             "group": group,
@@ -994,12 +1018,10 @@ def group_chat_view(request, group_id):
             "users": users,
             "extra_contacts": extra_contacts,
             "groups": groups,
-            "role": "teammember",
+            "user_role": user_role,  # ✅ pass this!
         })
 
-    # ============================
-    # 🔹 FULL PAGE RENDER
-    # ============================
+    # 🔹 Full Page Render
     context = {
         "group": group,
         "messages": messages_qs,
@@ -1009,9 +1031,10 @@ def group_chat_view(request, group_id):
         "users": users,
         "extra_contacts": extra_contacts,
         "groups": groups,
-        "role": "teammember",
+        "user_role": user_role,  # ✅ add this
     }
     return render(request, 'group_chat.html', context)
+
 
 @never_cache
 def teammember_dashboard(request):
@@ -1035,21 +1058,20 @@ def teammember_dashboard(request):
             login_time = make_aware(login_time)
         login_time = localtime(login_time)
 
-    # Announcements from last 12 hours
-    cutoff = now() - timedelta(hours=12)
-    announcements = Announcement.objects.filter(
-        created_by__team=team_name,
-        created_at__gte=cutoff
-    ).order_by('-created_at')
+    # 🕗 Fetch configurable report submission windows from DB
+    morning_setting = ReportTimeSetting.objects.filter(report_type='morning').first()
+    evening_setting = ReportTimeSetting.objects.filter(report_type='evening').first()
 
-    # Morning/Evening time windows
-    morning_start, morning_end = time(9, 30), time(10, 30)
-    evening_start, evening_end = time(17, 0), time(18, 15)
+    # Default/fallback times
+    morning_start = morning_setting.start_time if morning_setting else time(9, 30)
+    morning_end = morning_setting.end_time if morning_setting else time(10, 30)
+    evening_start = evening_setting.start_time if evening_setting else time(17, 0)
+    evening_end = evening_setting.end_time if evening_setting else time(18, 15)
 
     if request.method == "POST":
         now_time = localtime().time()
 
-        # Morning report
+        # Morning report submission
         if 'morning_submit' in request.POST:
             if is_within_time_range(morning_start, morning_end, now_time):
                 report_text = request.POST.get("morning_report")
@@ -1065,9 +1087,12 @@ def teammember_dashboard(request):
                     messages.success(request, "Morning report submitted successfully.")
                     return redirect('teammember_dashboard')
             else:
-                messages.error(request, "You can only submit morning reports between 9:30 and 10:30 AM.")
+                messages.error(
+                    request,
+                    f"You can only submit morning reports between {morning_start.strftime('%I:%M %p')} and {morning_end.strftime('%I:%M %p')}."
+                )
 
-        # Evening report
+        # Evening report submission
         elif 'evening_submit' in request.POST:
             if is_within_time_range(evening_start, evening_end, now_time):
                 report_text = request.POST.get("evening_report")
@@ -1083,7 +1108,10 @@ def teammember_dashboard(request):
                     messages.success(request, "Evening report submitted successfully.")
                     return redirect('teammember_dashboard')
             else:
-                messages.error(request, "You can only submit evening reports between 5:00 and 6:15 PM.")
+                messages.error(
+                    request,
+                    f"You can only submit evening reports between {evening_start.strftime('%I:%M %p')} and {evening_end.strftime('%I:%M %p')}."
+                )
 
     # ✅ Fetch reports submitted in last 24 hours
     report_cutoff = now() - timedelta(hours=24)
@@ -1102,15 +1130,25 @@ def teammember_dashboard(request):
     for r in evening_reports:
         r["type"] = "Evening"
 
-    all_reports = list(morning_reports) + list(evening_reports)
-    all_reports = sorted(all_reports, key=lambda x: x["created_at"], reverse=True)
+    all_reports = sorted(
+        list(morning_reports) + list(evening_reports),
+        key=lambda x: x["created_at"],
+        reverse=True
+    )
 
     return render(request, 'teammember_dashboard.html', {
-        'announcements': announcements,
+        'announcements': Announcement.objects.filter(
+            created_by__team=team_name,
+            created_at__gte=now() - timedelta(hours=12)
+        ).order_by('-created_at'),
         'morning_allowed': is_within_time_range(morning_start, morning_end),
         'evening_allowed': is_within_time_range(evening_start, evening_end),
         'login_time': login_time,
-        'all_reports': all_reports,  # ✅ send to template
+        'all_reports': all_reports,
+        'morning_start': morning_start,
+        'morning_end': morning_end,
+        'evening_start': evening_start,
+        'evening_end': evening_end,
     })
 
 @never_cache

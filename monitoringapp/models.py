@@ -120,6 +120,26 @@ class EveningReport(models.Model):
     
 
 
+
+class ReportTimeSetting(models.Model):
+    MORNING = 'morning'
+    EVENING = 'evening'
+    REPORT_TYPES = [
+        (MORNING, 'Morning'),
+        (EVENING, 'Evening'),
+    ]
+
+    report_type = models.CharField(max_length=20, choices=REPORT_TYPES, unique=True)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    def __str__(self):
+        return f"{self.get_report_type_display()} Report ({self.start_time} - {self.end_time})"
+
+
+
+
+
 class ProjectAssign(models.Model):
     WORK_TYPE_CHOICES = (
         ("Client", "Client"),

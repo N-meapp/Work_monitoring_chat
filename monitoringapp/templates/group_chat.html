@@ -28,7 +28,45 @@
     <button class="menu-toggle md:hidden text-white text-2xl max-md:mt-[-9rem]">&times;</button>
   </div>
 
-  <nav class="select-none">
+   <nav class="select-none">
+  {% if user_role == "team_lead" %}
+    <ul class="space-y-8 text-sm">
+      <li><a href="{% url 'teamlead_dashboard' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Team Lead Dashboard</a></li>
+      <li><a href="{% url 'teamlead_reports' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Reports</a></li>
+      <li><a href="{% url 'teamlead_project_assigning' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Project Assigning</a></li>
+      <li><a href="{% url 'teamlead_notepad' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Notepad</a></li>
+      <li><a href="{% url 'teamlead_repository' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Knowledge Repository</a></li>
+      <li><a href="{% url 'teamlead_profile' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Profile</a></li>
+      <li><a href="{% url 'teamlead_task' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">My task</a></li>
+      <li><a href="{% url 'teamlead_chat' %}" class="block py-2 px-4 rounded bg-white text-black">Chat</a></li>
+      <li>
+        <a href="https://meet.google.com/" target="_blank" class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
+      </li>
+      <li><a href="{% url 'teamlead_logout' %}" class="block py-2 px-4 rounded bg-[red] text-white">Logout</a></li>
+    </ul>
+
+  {% elif user_role == "management" %}
+    <ul class="space-y-6 text-sm">
+        <li><a href="{% url 'admin_dashboard' %}"
+            class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Dashboard</a></li>
+        <li><a href="{% url 'admin_usermanagement' %}"
+            class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">User Management</a></li>
+            <li>
+        <a href="{% url 'admin_reports' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Reports</a>
+      </li>
+<li>
+        <a href="{% url 'admin_chat' %}" class="block py-2 px-4 rounded bg-white text-[#151a37]">Chat</a>
+      </li>
+      <li>
+        <a href="{% url 'admin_profile' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Profile</a>
+      </li>        <li>
+          <a href="https://meet.google.com/" target="_blank"
+            class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
+        </li>
+        <li><a href="{% url 'admin_logout' %}" class="block py-2 px-4 rounded bg-[red] text-white">Logout</a></li>
+      </ul>
+
+  {% else %}
     <ul class="space-y-8 text-sm">
       <li><a href="{% url 'teammember_dashboard' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Team member Dashboard</a></li>
       <li><a href="{% url 'teammember_project' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Team member Project</a></li>
@@ -37,12 +75,14 @@
       <li><a href="{% url 'teammember_profile' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">Profile</a></li>
       <li><a href="{% url 'teammember_task' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-black">My task</a></li>
       <li><a href="{% url 'teammember_chat' %}" class="block py-2 px-4 rounded bg-white text-black">Chat</a></li>
-            <li>
-      <a href="https://meet.google.com/" target="_blank" class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
-    </li>
+      <li>
+        <a href="https://meet.google.com/" target="_blank" class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a>
+      </li>
       <li><a href="{% url 'teammember_logout' %}" class="block py-2 px-4 rounded bg-red-600 text-white">Logout</a></li>
     </ul>
-  </nav>
+  {% endif %}
+</nav>
+
 </div>
 
 <!-- Mobile Toggle -->
