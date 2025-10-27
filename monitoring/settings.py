@@ -74,13 +74,30 @@ CSRF_TRUSTED_ORIGINS = [
     "https://cybexeltechnologies.com"
 ]
 
-# Database
+# # Database
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+from dotenv import load_dotenv
+
+# Point to your .env file location (if .env is in the root folder)
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
+
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
