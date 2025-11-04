@@ -936,9 +936,10 @@ def chat_room(request, user_id):
     messages_list = room.messages.order_by("timestamp")
     groups = Group.objects.filter(memberships__user=current_user).distinct()
 
-   
-    user_role = request.session.get("position")
+    # ✅ Normalize role safely
+    user_role = request.session.get("position", "").strip().lower().replace(" ", "_")
 
+    # Handle group creation
     if request.method == "POST" and request.POST.get("action") == "create_group":
         group_name = request.POST.get("group_name")
         member_ids = request.POST.getlist("members")
@@ -964,22 +965,21 @@ def chat_room(request, user_id):
         "users": users,
         "extra_contacts": extra_contacts,
         "groups": groups,
-        "role": "chat_room",
-        "user_role": user_role,   
+        "user_role": user_role,   # ✅ correct key used in template
     }
 
     return render(request, "chat_room.html", context)
-
 
 
 def group_chat_view(request, group_id):
     user_id = request.session.get("user_id")
     if not user_id:
         return redirect("login_view")
+
     current_user = get_object_or_404(User, id=user_id)
 
-    # ✅ Fetch user role (assuming you have a field like `role` or `user_type`)
-    user_role = getattr(current_user, "role", "teammember")  # default fallback
+    # ✅ Correct role logic
+    user_role = request.session.get("position", "").strip().lower().replace(" ", "_")
 
     group = get_object_or_404(Group, id=group_id)
     messages_qs = GroupMessage.objects.filter(group=group).order_by('timestamp')
@@ -991,7 +991,6 @@ def group_chat_view(request, group_id):
     extra_contacts = ExtraContact.objects.all()
     groups = Group.objects.filter(memberships__user=current_user).distinct()
 
-    # 🔹 Handle group management actions...
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "add_member":
@@ -1000,6 +999,7 @@ def group_chat_view(request, group_id):
             GroupMember.objects.get_or_create(group=group, user=new_user)
             messages.success(request, f"{new_user.name} added to {group.name}.")
             return redirect('group_chat_view', group_id=group.id)
+
         elif action == "remove_member":
             rem_user_id = request.POST.get("user_id")
             member = get_object_or_404(GroupMember, group=group, user_id=rem_user_id)
@@ -1007,7 +1007,7 @@ def group_chat_view(request, group_id):
             messages.warning(request, "Member removed successfully.")
             return redirect('group_chat_view', group_id=group.id)
 
-    # 🔹 AJAX partial load (Modal)
+    # AJAX partial
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('partial') == 'true':
         return render(request, 'partials/group_chat_partial.html', {
             "group": group,
@@ -1018,10 +1018,10 @@ def group_chat_view(request, group_id):
             "users": users,
             "extra_contacts": extra_contacts,
             "groups": groups,
-            "user_role": user_role,  # ✅ pass this!
+            "user_role": user_role,  # ✅ pass correct role
         })
 
-    # 🔹 Full Page Render
+    # Full page render
     context = {
         "group": group,
         "messages": messages_qs,
@@ -1031,7 +1031,7 @@ def group_chat_view(request, group_id):
         "users": users,
         "extra_contacts": extra_contacts,
         "groups": groups,
-        "user_role": user_role,  # ✅ add this
+        "user_role": user_role,  # ✅ correct value
     }
     return render(request, 'group_chat.html', context)
 

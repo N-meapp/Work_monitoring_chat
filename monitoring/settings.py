@@ -74,7 +74,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://cybexeltechnologies.com"
 ]
 
-# # Database
+# Database
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',

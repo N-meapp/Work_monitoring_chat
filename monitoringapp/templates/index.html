@@ -39,7 +39,7 @@
   👋 {{ logged_in_user.name }}
 </a>
 {% else %}
-<a href="{% url 'login' %}" 
+<a href="{% url 'login_view' %}" 
    class="hidden md:inline px-5 py-2 bg-[#6c024d] text-white rounded-md hover:bg-[#5c2a4d] transition">
   Login
 </a>
@@ -72,7 +72,7 @@
         👋 {{ logged_in_user.name }}
       </a>
     {% else %}
-      <a href="{% url 'login' %}" 
+      <a href="{% url 'login_view' %}" 
          class="px-5 py-2 bg-[#6c024d] text-white rounded-md hover:bg-[#5c2a4d] transition text-center">
         Login
       </a>
