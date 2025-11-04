@@ -1037,6 +1037,7 @@ def group_chat_view(request, group_id):
 
 
 @never_cache
+@login_required
 def teammember_dashboard(request):
     # ❌ Redirect if not logged in
     if not request.session.get("user_id") or request.session.get("position") != "team_member":
