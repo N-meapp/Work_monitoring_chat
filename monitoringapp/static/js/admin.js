@@ -48,7 +48,7 @@ let joiningDate = button.dataset.joining;
 }
 
 
-function closeModal() {
+function closeEditModal() {
   document.getElementById("editModal").classList.add("hidden");
 }
 

@@ -12,7 +12,7 @@
 /* Style the dropdown (collapsed state) */
 select {
     color: white;                 
-    background-color: #000;       
+    background-color: #d6c9c9ff;       
     border: 1px solid #444;
     border-radius: 0.5rem;
     padding: 0.5rem;
@@ -25,8 +25,8 @@ select {
 
 /* Style options inside dropdown */
 select option {
-    color: white;                 
-    background-color: #000;       
+    color: black;                 
+    background-color: #dfdadaff;       
 }
 
 /* Override hover/focus/selected states */
@@ -35,8 +35,8 @@ select:focus,
 select option:hover,
 select option:focus,
 select option:checked {
-    color: white !important;
-    background-color: #000 !important;
+    color: black !important;
+    background-color: #c0bebeff !important;
 }
 
 /* Remove outline for cleaner look */
@@ -400,7 +400,7 @@ select:focus {
       </div>
 
       <div class="col-span-2 mt-4 flex justify-end">
-        <button type="button" onclick="closeModal()" class="bg-gray-400 px-4 py-2 rounded mr-2">Cancel</button>
+        <button type="button" onclick="closeEditModal()" class="bg-gray-400 px-4 py-2 rounded mr-2">Cancel</button>
         <button type="submit" class="bg-[#250f1e] text-white px-4 py-2 rounded">Save</button>
       </div>
     </form>

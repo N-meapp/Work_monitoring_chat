@@ -1037,7 +1037,7 @@ def group_chat_view(request, group_id):
 
 
 @never_cache
-@login_required
+
 def teammember_dashboard(request):
     # ❌ Redirect if not logged in
     if not request.session.get("user_id") or request.session.get("position") != "team_member":
@@ -1079,12 +1079,13 @@ def teammember_dashboard(request):
                 status = request.POST.get("morning_status")
                 if report_text and status:
                     MorningReport.objects.create(
-                        user=team_member,
-                        department=team_member.department.name if team_member.department else None,
-                        team=team_member.team.name if team_member.team else None,
-                        report_text=report_text,
-                        status=status
-                    )
+    user=team_member,
+    department=team_member.department if team_member.department else None,
+    team=team_member.team if team_member.team else None,
+    report_text=report_text,
+    status=status
+)
+
                     messages.success(request, "Morning report submitted successfully.")
                     return redirect('teammember_dashboard')
             else:
@@ -1100,12 +1101,14 @@ def teammember_dashboard(request):
                 status = request.POST.get("evening_status")
                 if report_text and status:
                     EveningReport.objects.create(
-                        user=team_member,
-                        department=team_member.department.name if team_member.department else None,
-                        team=team_member.team.name if team_member.team else None,
-                        report_text=report_text,
-                        status=status
-                    )
+    user=team_member,
+    department=str(team_member.department.name),
+    team=str(team_member.team.name),
+    report_text=report_text,
+    status=status
+)
+
+
                     messages.success(request, "Evening report submitted successfully.")
                     return redirect('teammember_dashboard')
             else:
