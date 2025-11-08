@@ -91,23 +91,41 @@
   </div>
 </div>
 
-  <div class="bg-transparent p-6 rounded-2xl shadow mb-6">
-    <h2 class="text-xl font-bold mb-4 text-white">Announcements</h2>
+ <div class="bg-transparent p-6 rounded-2xl shadow mb-6">
+  <h2 class="text-xl font-bold mb-4 text-white">Announcements</h2>
 
-    {% if announcements %}
-      {% for ann in announcements %}
-        <div class="w-full p-3 rounded-lg border-2 border-[#250f1e] bg-transparent text-white mb-4">
-          <p class="font-semibold">{{ ann.title }}</p>
-          <p>{{ ann.message }}</p>
-          <p class="text-xs text-gray-400">
-            Posted at: {{ ann.created_at|localtime|date:"M d, Y h:i A"}}
-          </p>
-        </div>
-      {% endfor %}
-    {% else %}
-      <p class="text-gray-400">No announcements in the last 12 hours.</p>
-    {% endif %}
+  {% if announcements %}
+    {% for ann in announcements %}
+      <div class="w-full p-3 rounded-lg border-2 border-[#250f1e] bg-transparent text-white mb-4">
+        <p class="font-semibold">{{ ann.title }}</p>
+        <p>{{ ann.message }}</p>
+
+        <p class="text-xs text-gray-400 mt-1">
+          Posted by <span class="font-semibold text-gray-300">{{ ann.created_by.username }}</span> 
+          on {{ ann.created_at|localtime|date:"M d, Y h:i A" }}
+        </p>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-gray-400">No announcements in the last 12 hours.</p>
+  {% endif %}
+</div>
+
+{% if messages %}
+  <div id="messages-container">
+    {% for message in messages %}
+      <div class="message mb-4 p-3 rounded-lg 
+                  {% if message.tags == 'error' %} bg-red-600 
+                  {% elif message.tags == 'success' %} bg-green-600 
+                  {% else %} bg-blue-600 {% endif %} 
+                  text-white text-center transition-opacity duration-500">
+        {{ message }}
+      </div>
+    {% endfor %}
   </div>
+
+ 
+{% endif %}
 
 <div class="bg-[#250f1e]/40 p-6 rounded-2xl shadow mb-6">
   <h2 class="text-lg font-semibold mb-3 text-white">Submit Morning Report</h2>

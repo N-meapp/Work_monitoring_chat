@@ -155,3 +155,14 @@ let socket = null;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight; // auto scroll
   }
+
+
+
+   // Hide messages after 4 seconds (4000ms)
+    setTimeout(() => {
+      const messages = document.querySelectorAll('#messages-container .message');
+      messages.forEach(msg => {
+        msg.style.opacity = '0';
+        setTimeout(() => msg.remove(), 500); // remove after fade-out
+      });
+    }, 1000);

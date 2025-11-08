@@ -9,7 +9,7 @@
   <title>Team Lead Dashboard - Cybexel</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="{% static 'css/admin.css' %}">
-   <style>
+ <style>
   /* Style the select box */
   select.morning-select {
     background-color: #000 !important;
@@ -116,7 +116,80 @@
 
 
 
+<!-- ⚙️ Configure Report Submission Times -->
+<div class="bg-[#250f1e]/40 p-6 rounded-2xl shadow mb-6">
+  <h2 class="text-lg font-semibold mb-4 text-white flex items-center gap-2">
+     Configure Report Submission Times
+  </h2>
 
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Morning Time Configuration -->
+    <form method="POST" class="space-y-3">
+      {% csrf_token %}
+      <h3 class="text-md font-semibold text-white">Morning Report Time</h3>
+      <p class="text-gray-400 text-sm mb-2">
+        Current window: {{ morning_start|time:"h:i A" }} - {{ morning_end|time:"h:i A" }}
+      </p>
+      <div class="flex items-center gap-3">
+        <div>
+          <label class="block text-gray-400 text-sm mb-1">Start Time</label>
+          <input type="time" name="morning_start" value="{{ morning_start|time:'H:i' }}"
+            class="bg-black border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-600">
+        </div>
+        <div>
+          <label class="block text-gray-400 text-sm mb-1">End Time</label>
+          <input type="time" name="morning_end" value="{{ morning_end|time:'H:i' }}"
+            class="bg-black border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-600">
+        </div>
+      </div>
+      <button type="submit" name="update_morning_time"
+        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold">
+        Update Morning Time
+      </button>
+    </form>
+
+    <!-- Evening Time Configuration -->
+    <form method="POST" class="space-y-3">
+      {% csrf_token %}
+      <h3 class="text-md font-semibold text-white">Evening Report Time</h3>
+      <p class="text-gray-400 text-sm mb-2">
+        Current window: {{ evening_start|time:"h:i A" }} - {{ evening_end|time:"h:i A" }}
+      </p>
+      <div class="flex items-center gap-3">
+        <div>
+          <label class="block text-gray-400 text-sm mb-1">Start Time</label>
+          <input type="time" name="evening_start" value="{{ evening_start|time:'H:i' }}"
+            class="bg-black border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-600">
+        </div>
+        <div>
+          <label class="block text-gray-400 text-sm mb-1">End Time</label>
+          <input type="time" name="evening_end" value="{{ evening_end|time:'H:i' }}"
+            class="bg-black border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-600">
+        </div>
+      </div>
+      <button type="submit" name="update_evening_time"
+        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold">
+        Update Evening Time
+      </button>
+    </form>
+  </div>
+</div>
+{% if messages %}
+  <div id="messages-container">
+    {% for message in messages %}
+      <div class="message mb-4 p-3 rounded-lg 
+                  {% if message.tags == 'error' %} bg-red-600 
+                  {% elif message.tags == 'success' %} bg-green-600 
+                  {% else %} bg-blue-600 {% endif %} 
+                  text-white text-center transition-opacity duration-500">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+
+ 
+{% endif %}
+<!-- 🌅 Submit Morning Report -->
 <div class="bg-[#250f1e]/40 p-6 rounded-2xl shadow mb-6">
   <h2 class="text-lg font-semibold mb-3 text-white">Submit Morning Report</h2>
   {% if morning_allowed %}
@@ -133,17 +206,20 @@
   <option value="Completed">Completed</option>
 </select>
 
-
       <button type="submit" name="morning_submit"
         class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold">
         Submit Morning Report
       </button>
     </form>
   {% else %}
-    <p class="text-gray-400">Morning report submission is only allowed between 9:30 and 10:30 AM.</p>
+    <p class="text-gray-400">
+      Morning report submission is only allowed between
+      {{ morning_start|time:"h:i A" }} and {{ morning_end|time:"h:i A" }}.
+    </p>
   {% endif %}
 </div>
 
+<!-- 🌇 Submit Evening Report -->
 <div class="bg-[#250f1e]/40 p-6 rounded-2xl shadow mb-6">
   <h2 class="text-lg font-semibold mb-3 text-white">Submit Evening Report</h2>
   {% if evening_allowed %}
@@ -159,17 +235,20 @@
   <option value="Completed">Completed</option>
 </select>
 
-
       <button type="submit" name="evening_submit"
         class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold">
         Submit Evening Report
       </button>
     </form>
   {% else %}
-    <p class="text-gray-400">Evening report submission is only allowed between 5:00 and 6:15 PM.</p>
+    <p class="text-gray-400">
+      Evening report submission is only allowed between
+      {{ evening_start|time:"h:i A" }} and {{ evening_end|time:"h:i A" }}.
+    </p>
   {% endif %}
 </div>
-<!-- 📊 Submitted Reports (Last 24 Hrs) -->
+
+<!-- 📊 Submitted Reports -->
 <div class="bg-[#250f1e]/40 p-6 rounded-2xl shadow mb-6">
   <h2 class="text-lg font-semibold mb-3 text-white">Your Reports (Last 24 Hrs)</h2>
 
@@ -190,7 +269,7 @@
               <td class="px-4 py-2">{{ report.type }}</td>
               <td class="px-4 py-2">{{ report.report_text }}</td>
               <td class="px-4 py-2">{{ report.status }}</td>
-              <td class="px-4 py-2">{{ report.created_at|date:"M d, Y H:i A" }}</td>
+              <td class="px-4 py-2">{{ report.created_at|date:"M d, Y h:i A" }}</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -207,6 +286,7 @@
 
 
 
+
   <div class="border-4 border-[#250f1e] p-6 rounded-lg shadow-md mt-20">
     <h2 class="text-xl font-semibold mb-4">Announcements</h2>
     
@@ -215,10 +295,11 @@
         <div class="p-3 bg-gray-50/10 border rounded">
           <p class="text-gray-200">{{ announcement.message }}</p>
 
-<span class="text-xs text-gray-200">
+    <span class="text-xs text-gray-200">
     Posted on {{ announcement.created_at|localtime|date:"M d, Y h:i A" }}
-</span>
+          </span>
 
+        
         </div>
       {% empty %}
         <p class="text-gray-100">No announcements yet.</p>

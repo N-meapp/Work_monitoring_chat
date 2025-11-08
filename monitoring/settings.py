@@ -19,7 +19,7 @@ SECRET_KEY = 'django-insecure-zgz&^hz5b4*!200p3!v#t*o!558*xq4p5!r0mskmj1%p!!)!^-
 DEBUG = True
 ALLOWED_HOSTS = []
 
-# ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'localhost', 'cybexeltechnologies.com']
+ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'localhost', 'cybexeltechnologies.com']
 # ALLOWED_HOSTS = ['cybexeltechnologies.com', 'www.cybexeltechnologies.com']
 
 # Application definition
@@ -71,36 +71,36 @@ CHANNEL_LAYERS = {
     "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
 }
 
-# CSRF_TRUSTED_ORIGINS = [
-#     "https://cybexeltechnologies.com",
-#     "https://cybexeltechnologies.com"
-# ]
+CSRF_TRUSTED_ORIGINS = [
+    "https://cybexeltechnologies.com",
+    "https://cybexeltechnologies.com"
+]
 # CSRF_TRUSTED_ORIGINS = [
 #     "http://127.0.0.1:8000",
 #     "http://localhost:8000",
 # ]
 # Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 from dotenv import load_dotenv
 
 # Point to your .env file location (if .env is in the root folder)
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.getenv('DB_NAME'),
-#         'USER': os.getenv('DB_USER'),
-#         'PASSWORD': os.getenv('DB_PASSWORD'),
-#         'HOST': os.getenv('DB_HOST'),
-#         'PORT': os.getenv('DB_PORT'),
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
+    }
+}
 
 
 

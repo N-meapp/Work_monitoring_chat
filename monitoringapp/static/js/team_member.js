@@ -119,3 +119,52 @@ let socket = null;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight; // auto scroll
   }
+
+
+
+
+
+// static/js/messages.js
+
+(function () {
+  // Wait for DOM to be ready
+  function hideMessagesAfter(delayMs = 4000, fadeMs = 500) {
+    const container = document.getElementById('messages-container');
+    if (!container) return;
+
+    // Query messages inside container
+    const messages = container.querySelectorAll('.message');
+    if (!messages.length) return;
+
+    setTimeout(() => {
+      messages.forEach(msg => {
+        // Prefer class-based fade if you're using Tailwind; fallback to style
+        // Add utility class if available
+        if (msg.classList) {
+          // Tailwind opacity utility and transition classes should be present on element
+          // We'll add the opacity-0 class if your project has it, otherwise set style
+          msg.classList.add('opacity-0');
+        } else {
+          msg.style.transition = `opacity ${fadeMs}ms`;
+          msg.style.opacity = '0';
+        }
+
+        // Remove element after fade completes
+        setTimeout(() => {
+          if (msg.parentNode) msg.parentNode.removeChild(msg);
+          // If container becomes empty, remove it too
+          if (container.childElementCount === 0 && container.parentNode) {
+            container.parentNode.removeChild(container);
+          }
+        }, fadeMs + 20);
+      });
+    }, delayMs);
+  }
+
+  // If DOM already loaded, run immediately; otherwise wait
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => hideMessagesAfter(4000, 500));
+  } else {
+    hideMessagesAfter(4000, 500);
+  }
+})();
