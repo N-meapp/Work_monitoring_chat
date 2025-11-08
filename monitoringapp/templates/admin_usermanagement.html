@@ -313,7 +313,7 @@ select:focus {
           <td class="p-2 border whitespace-nowrap">{{ user.status }}</td>
           <td class="p-2 border flex gap-2 justify-center whitespace-nowrap">
             <button 
-              onclick="openAdminUserEditModal(this)" 
+              onclick="openEditModal(this)" 
               class="bg-blue-500 text-white px-3 py-1 rounded"
               data-id="{{ user.id }}"
               data-empid="{{ user.employee_id }}"
@@ -434,6 +434,7 @@ select:focus {
     </form>
   </div>
 </div>
+
 
 
 
