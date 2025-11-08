@@ -97,16 +97,14 @@ def delete_team(request, pk):
     team.delete()
     return redirect('admin_dashboard')
 
-
 @csrf_exempt
-
 def admin_usermanagement(request):
     users = User.objects.all()
     departments = Department.objects.all()
     teams = Team.objects.all()
 
     if request.method == "POST":
-        user_id = request.POST.get("id")  # for edit, will be None for new users
+        user_id = request.POST.get("id")  # for edit (None for new user)
         name = request.POST.get("name")
         employee_id = request.POST.get("employee_id")
         email = request.POST.get("email")
@@ -122,21 +120,24 @@ def admin_usermanagement(request):
         image = request.FILES.get("profile_image")
         joining_date = request.POST.get("joining_date")
 
+        # Foreign key fetch
         department = Department.objects.get(id=department_id) if department_id else None
         team = Team.objects.get(id=team_id) if team_id else None
 
-        if user_id:  # Edit existing user
+        # =============== EDIT EXISTING USER ===============
+        if user_id:
             user = get_object_or_404(User, id=user_id)
 
-            # Uniqueness checks excluding current user
+            # Uniqueness validation (excluding current user)
             if User.objects.filter(employee_id=employee_id).exclude(id=user.id).exists():
                 messages.error(request, "⚠️ Employee ID already exists for another user.")
                 return redirect("admin_usermanagement")
+
             if User.objects.filter(username=username).exclude(id=user.id).exists():
                 messages.error(request, "⚠️ Username already exists for another user.")
                 return redirect("admin_usermanagement")
 
-            # Update user fields
+            # Update user details
             user.name = name
             user.employee_id = employee_id
             user.email = email
@@ -148,6 +149,7 @@ def admin_usermanagement(request):
             user.work_location = work_location
             user.username = username
             user.status = status
+
             if password:
                 user.password = make_password(password)
             if image:
@@ -156,19 +158,24 @@ def admin_usermanagement(request):
                 try:
                     user.joining_date = datetime.strptime(joining_date, "%Y-%m-%d").date()
                 except ValueError:
-                    messages.error(request, "Invalid date format! Use YYYY-MM-DD.")
+                    messages.error(request, "❌ Invalid date format! Use YYYY-MM-DD.")
                     return redirect("admin_usermanagement")
+
             user.save()
             messages.success(request, "✅ User updated successfully!")
-        
-        else:  # Create new user
+
+        # =============== CREATE NEW USER ===============
+        else:
+            # Uniqueness validation
             if User.objects.filter(employee_id=employee_id).exists():
                 messages.error(request, "⚠️ Employee ID already exists. Please choose another one.")
                 return redirect("admin_usermanagement")
+
             if User.objects.filter(username=username).exists():
                 messages.error(request, "⚠️ Username already exists. Please choose another one.")
                 return redirect("admin_usermanagement")
 
+            # Create new user
             User.objects.create(
                 name=name,
                 employee_id=employee_id,
@@ -183,19 +190,20 @@ def admin_usermanagement(request):
                 password=make_password(password) if password else "",
                 status=status,
                 profile_image=image,
-                joining_date=datetime.strptime(joining_date, "%Y-%m-%d").date() if joining_date else None
+                joining_date=datetime.strptime(joining_date, "%Y-%m-%d").date() if joining_date else None,
             )
             messages.success(request, "✅ User created successfully!")
 
+        # ✅ Redirect ensures message is displayed properly
         return redirect("admin_usermanagement")
 
+    # =============== GET REQUEST ===============
     context = {
         "users": users,
         "departments": departments,
         "teams": teams,
     }
     return render(request, "admin_usermanagement.html", context)
-
 
 def edit_user(request):
     if request.method == "POST":
@@ -244,7 +252,20 @@ def edit_user(request):
         return redirect("admin_usermanagement")
 
     return redirect("admin_usermanagement")
+@csrf_exempt
+def check_username_exists(request):
+    username = request.GET.get("username", "").strip()
+    user_id = request.GET.get("user_id")  # optional — to exclude current user during edit
 
+    if not username:
+        return JsonResponse({"exists": False})
+
+    # Filter case-insensitive
+    qs = User.objects.filter(username__iexact=username)
+    if user_id:
+        qs = qs.exclude(id=user_id)
+
+    return JsonResponse({"exists": qs.exists()})
 
 
 def delete_user(request, id):
@@ -258,7 +279,7 @@ def delete_user(request, id):
 def admin_reports(request):
     show_all = request.GET.get('all')
     export = request.GET.get('export')
-    filter_date = request.GET.get('date')  # Added date filter
+    filter_date = request.GET.get('date')
 
     # Determine report queryset
     if show_all:
@@ -276,10 +297,6 @@ def admin_reports(request):
 
     # Export filtered reports to Excel
     if export:
-        if not morning_reports.exists() and not evening_reports.exists():
-            messages.error(request, "No reports available to export.")
-            return redirect("admin_reports")
-
         wb = Workbook()
         ws = wb.active
         ws.title = "Team Reports"
@@ -326,8 +343,6 @@ def admin_reports(request):
         'filter_date': filter_date,
     }
     return render(request, 'admin_reports.html', context)
-
-
 
 
 

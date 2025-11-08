@@ -86,17 +86,6 @@
 
     </div>
   </div>
-{% if messages %}
-  {% for message in messages %}
-    <div class="mb-4 p-3 rounded-lg 
-                {% if message.tags == 'error' %} bg-red-600 
-                {% elif message.tags == 'success' %} bg-green-600 
-                {% else %} bg-blue-600 {% endif %} 
-                text-white text-center">
-      {{ message }}
-    </div>
-  {% endfor %}
-{% endif %}
 
 <form method="GET" class="mb-4 flex flex-wrap gap-2 items-center">
   <input type="date" name="date" value="{{ filter_date|default_if_none:'' }}"

@@ -90,7 +90,30 @@ select:focus {
 <div class="bg-[#181316] w-full h-28 flex items-center justify-center select-none mt-20">
   <h1 class="uppercase text-white text-2xl md:text-4xl font-bold">Admin User Management</h1>
 </div>
+<!-- ALERT MESSAGE (centered and compact) -->
+{% if messages %}
+  <div id="messages-container" class="flex justify-center mt-6">
+    {% for message in messages %}
+      <div class="message w-full max-w-lg text-center p-3 rounded-lg text-white font-medium shadow-lg
+        {% if message.tags == 'success' %} bg-green-600 
+        {% elif message.tags == 'error' %} bg-red-600 
+        {% else %} bg-gray-700 {% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
 
+  <script>
+    // Smooth fade-out after 3 seconds
+    setTimeout(() => {
+      document.querySelectorAll('#messages-container .message').forEach(msg => {
+        msg.style.transition = "opacity 0.5s";
+        msg.style.opacity = '0';
+        setTimeout(() => msg.remove(), 500);
+      });
+    }, 3000);
+  </script>
+{% endif %}
 <div class="flex justify-center items-center mt-10 px-4">
   <form method="POST" enctype="multipart/form-data" 
         class="border-2 border-[#250f1e] bg-transparent hover:text-black shadow-lg rounded-xl p-6 sm:p-8 w-full max-w-4xl">
@@ -236,6 +259,11 @@ select:focus {
     </div>
   </form>
 </div>
+
+
+
+
+
 
 
 <div class="container mx-auto p-4 sm:p-6 lg:ml-[18rem] mt-6 lg:mt-10">

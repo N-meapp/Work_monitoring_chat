@@ -80,12 +80,12 @@ CSRF_TRUSTED_ORIGINS = [
 #     "http://localhost:8000",
 # ]
 # Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 from dotenv import load_dotenv
 
 # Point to your .env file location (if .env is in the root folder)
