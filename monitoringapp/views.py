@@ -29,6 +29,7 @@ from django.db.models.functions import Lower, Trim
 from openpyxl.utils import get_column_letter
 from django.utils.dateparse import parse_time
 
+from django.db import IntegrityError
 
 
 
@@ -124,17 +125,26 @@ def admin_usermanagement(request):
         department = Department.objects.get(id=department_id) if department_id else None
         team = Team.objects.get(id=team_id) if team_id else None
 
+        # Helper function for uniqueness check
+        def check_unique(field_name, value):
+            qs = User.objects.filter(**{field_name: value})
+            if user_id:
+                qs = qs.exclude(id=user_id)
+            return qs.exists()
+
         # =============== EDIT EXISTING USER ===============
         if user_id:
             user = get_object_or_404(User, id=user_id)
 
-            # Uniqueness validation (excluding current user)
-            if User.objects.filter(employee_id=employee_id).exclude(id=user.id).exists():
+            # Uniqueness validation
+            if check_unique("employee_id", employee_id):
                 messages.error(request, "⚠️ Employee ID already exists for another user.")
                 return redirect("admin_usermanagement")
-
-            if User.objects.filter(username=username).exclude(id=user.id).exists():
+            if check_unique("username", username):
                 messages.error(request, "⚠️ Username already exists for another user.")
+                return redirect("admin_usermanagement")
+            if check_unique("email", email):
+                messages.error(request, "⚠️ Email already exists for another user.")
                 return redirect("admin_usermanagement")
 
             # Update user details
@@ -161,40 +171,50 @@ def admin_usermanagement(request):
                     messages.error(request, "❌ Invalid date format! Use YYYY-MM-DD.")
                     return redirect("admin_usermanagement")
 
-            user.save()
-            messages.success(request, "✅ User updated successfully!")
+            try:
+                user.save()
+                messages.success(request, "✅ User updated successfully!")
+            except IntegrityError as e:
+                messages.error(request, f"⚠️ Cannot update user. Unique field conflict ({str(e)})")
+                return redirect("admin_usermanagement")
 
         # =============== CREATE NEW USER ===============
         else:
             # Uniqueness validation
-            if User.objects.filter(employee_id=employee_id).exists():
+            if check_unique("employee_id", employee_id):
                 messages.error(request, "⚠️ Employee ID already exists. Please choose another one.")
                 return redirect("admin_usermanagement")
-
-            if User.objects.filter(username=username).exists():
+            if check_unique("username", username):
                 messages.error(request, "⚠️ Username already exists. Please choose another one.")
                 return redirect("admin_usermanagement")
+            if check_unique("email", email):
+                messages.error(request, "⚠️ Email already exists. Please choose another one.")
+                return redirect("admin_usermanagement")
 
-            # Create new user
-            User.objects.create(
-                name=name,
-                employee_id=employee_id,
-                email=email,
-                phone=phone,
-                department=department,
-                team=team,
-                job_Position=job_Position,
-                designation=designation,
-                work_location=work_location,
-                username=username,
-                password=make_password(password) if password else "",
-                status=status,
-                profile_image=image,
-                joining_date=datetime.strptime(joining_date, "%Y-%m-%d").date() if joining_date else None,
-            )
-            messages.success(request, "✅ User created successfully!")
+            # Safe creation
+            try:
+                User.objects.create(
+                    name=name,
+                    employee_id=employee_id,
+                    email=email,
+                    phone=phone,
+                    department=department,
+                    team=team,
+                    job_Position=job_Position,
+                    designation=designation,
+                    work_location=work_location,
+                    username=username,
+                    password=make_password(password) if password else "",
+                    status=status,
+                    profile_image=image,
+                    joining_date=datetime.strptime(joining_date, "%Y-%m-%d").date() if joining_date else None,
+                )
+                messages.success(request, "✅ User created successfully!")
+            except IntegrityError as e:
+                messages.error(request, f"⚠️ Cannot create user. Unique field conflict ({str(e)})")
+                return redirect("admin_usermanagement")
 
-        # ✅ Redirect ensures message is displayed properly
+        # Redirect after POST to show messages
         return redirect("admin_usermanagement")
 
     # =============== GET REQUEST ===============
@@ -210,35 +230,58 @@ def edit_user(request):
         user_id = request.POST.get("id")
         user = get_object_or_404(User, id=user_id)
 
-        user.employee_id = request.POST.get("edit_emp_id")
-        user.name = request.POST.get("edit_name")
-        user.email = request.POST.get("edit_email")
-        user.phone = request.POST.get("edit_phone")
-
-        # Department + Team (FKs via dropdown IDs)
+        # Get form values
+        employee_id = request.POST.get("edit_emp_id")
+        username = request.POST.get("edit_username")
+        email = request.POST.get("edit_email")
+        name = request.POST.get("edit_name")
+        phone = request.POST.get("edit_phone")
+        job_position = request.POST.get("edit_job_position")
+        designation = request.POST.get("edit_designation")
+        work_location = request.POST.get("edit_work_location")
+        status = request.POST.get("edit_status")
+        password = request.POST.get("edit_password")
+        joining_date = request.POST.get("edit_joining_date")
         dept_id = request.POST.get("edit_department")
         team_id = request.POST.get("edit_team")
-        user.department = Department.objects.get(id=dept_id) if dept_id else None
-        user.team = Team.objects.get(id=team_id) if team_id else None
 
-        user.job_Position = request.POST.get("edit_job_position")
-        user.designation = request.POST.get("edit_designation")
-        user.work_location = request.POST.get("edit_work_location")
-        user.username = request.POST.get("edit_username")
-        user.status = request.POST.get("edit_status")
+        # ========== Check uniqueness before saving ==========
+        if User.objects.filter(employee_id=employee_id).exclude(id=user.id).exists():
+            messages.error(request, "⚠️ Employee ID already exists for another user.")
+            return redirect("admin_usermanagement")
 
-        # Password (hash it)
-        password = request.POST.get("edit_password")
+        if User.objects.filter(username=username).exclude(id=user.id).exists():
+            messages.error(request, "⚠️ Username already exists for another user.")
+            return redirect("admin_usermanagement")
+
+        if User.objects.filter(email=email).exclude(id=user.id).exists():
+            messages.error(request, "⚠️ Email already exists for another user.")
+            return redirect("admin_usermanagement")
+
+        # ========== Update fields ==========
+        user.employee_id = employee_id
+        user.username = username
+        user.email = email
+        user.name = name
+        user.phone = phone
+        user.job_Position = job_position
+        user.designation = designation
+        user.work_location = work_location
+        user.status = status
+
         if password:
             user.password = make_password(password)
 
+        # Department & Team
+        user.department = Department.objects.get(id=dept_id) if dept_id else None
+        user.team = Team.objects.get(id=team_id) if team_id else None
+
         # Joining Date
-        joining_date = request.POST.get("edit_joining_date")
         if joining_date:
             try:
                 user.joining_date = datetime.strptime(joining_date, "%Y-%m-%d").date()
             except ValueError:
-                messages.error(request, "Invalid date format! Use YYYY-MM-DD.")
+                messages.error(request, "❌ Invalid date format! Use YYYY-MM-DD.")
                 return redirect("admin_usermanagement")
         else:
             user.joining_date = None
@@ -247,8 +290,14 @@ def edit_user(request):
         if request.FILES.get("edit_profile_upload"):
             user.profile_image = request.FILES["edit_profile_upload"]
 
-        user.save()
-        messages.success(request, "✅ User updated successfully!")
+        # ========== Save with try-except ==========
+        try:
+            user.save()
+            messages.success(request, "✅ User updated successfully!")
+        except IntegrityError as e:
+            messages.error(request, f"⚠️ Cannot update user due to unique constraint. ({str(e)})")
+            return redirect("admin_usermanagement")
+
         return redirect("admin_usermanagement")
 
     return redirect("admin_usermanagement")
