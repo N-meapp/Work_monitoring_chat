@@ -47,181 +47,159 @@
   <!-- Mobile Toggle -->
 <button class="menu-toggle md:hidden fixed top-8 left-4 z-50 text-white p-2 rounded shadow-lg">&#9776;</button>
 
+<!-- Sidebar -->
+<div id="sidebar"
+  class="fixed top-0 left-0 h-full w-64 bg-[#250f1e] text-white p-6 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+  
+  <!-- Logo + Close -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="w-full flex justify-center select-none">
+      <img src="{% static 'images/logo.png' %}" alt="Logo" class="w-32 h-32 object-contain">
+    </div>
+    <button class="menu-toggle md:hidden text-white text-2xl">&times;</button>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="select-none">
+    <ul class="space-y-6 text-sm">
+      <li><a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Dashboard</a></li>
+      <li><a href="{% url 'admin_usermanagement' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">User Management</a></li>
+      <li><a href="{% url 'admin_reports' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Reports</a></li>
+      <li><a href="{% url 'admin_chat' %}" class="block py-2 px-4 rounded bg-white text-[#151a37]">Chat</a></li>
+      <li><a href="{% url 'admin_profile' %}" class="block py-2 px-4 rounded hover:bg-white hover:text-[#151a37]">Profile</a></li>
+      <li><a href="https://meet.google.com/" target="_blank" class="block py-2 px-4 rounded hover:bg-white hover:text-black border border-white">Google Meet</a></li>
+      <li><a href="{% url 'admin_logout' %}" class="block py-2 px-4 rounded bg-[red] text-white">Logout</a></li>
+    </ul>
+  </nav>
+</div>
+
+<!-- Mobile Toggle -->
+{% comment %} <button class="menu-toggle md:hidden fixed top-4 left-4 z-50 text-white p-2 rounded shadow-lg">&#9776;</button> {% endcomment %}
+
 <!-- Main Content -->
-<div class="flex h-screen md:ml-64">  <!-- 👈 Added ml-64 to move right of sidebar -->
+<div class="flex flex-col md:flex-row h-screen md:ml-64">
 
-  <!-- Left Chat List -->
-  <div class="w-80 bg-[#111b21] text-white flex flex-col">
+  <!-- Chat List -->
+  <div class="w-full md:w-80 bg-[#111b21] text-white flex flex-col">
     <!-- Header -->
-    <div class="flex items-center justify-between p-4 border-b border-gray-700">
+    <div class="flex items-center justify-between p-4 border-b border-gray-700 mt-[4rem]">
       <h2 class="font-bold text-lg">Chats</h2>
-<button onclick="openModal()" class="p-2 rounded-full hover:bg-gray-700">
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <path d="M12 5v14M5 12h14" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-</button>
-
+      <button onclick="openModal()" class="p-2 rounded-full hover:bg-gray-700">
+        <!-- plus icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="white">
+          <path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
     </div>
 
-    <!-- Team Members -->
+    <!-- User List -->
     <div class="p-4 overflow-y-auto flex-1">
       <h2 class="font-bold text-lg mb-4">Team Members</h2>
-
-<div id="user-list" class="flex-1 overflow-y-auto">
-  {% for user in users %}
-  <div class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer">
-    <a href="{% url 'chat_room' user.id %}" class="flex items-center w-full">
-      {% if user.profile_image %}
-        <img src="{{ user.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
-      {% else %}
-        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white border border-white font-bold mr-3">
-          {% if user.id == current_user.id %}
-            M
-          {% else %}
-            {{ user.name|first|upper }}
-          {% endif %}
-        </div>
-      {% endif %}
-      <div>
-        {% if user.id == current_user.id %}
-          <p class="font-medium">Me</p>
-          <p class="text-gray-400 text-sm">{{ user.phone }}</p>
-        {% else %}
-          <p class="font-medium">{{ user.name }}</p>
-          <p class="text-gray-400 text-sm">{{ user.phone }}</p>
-        {% endif %}
-      </div>
-    </a>
-  </div>
-  {% endfor %}
-</div>
-
-
-
-
-  
-
-
-<div class="mb-4">
-  <div class="flex justify-between items-center mb-2">
-    <h3 class="font-semibold text-lg text-white">Groups</h3>
-    <!-- + icon button for creating group -->
-    <button id="openModal" class="text-white hover:text-gray-300">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-      </svg>
-    </button>
-  </div>
-
-  <div class="space-y-2">
-    {% for group in groups %}
-      <a href="{% url 'group_chat_view' group.id %}" class="block bg-[#202c33] hover:bg-[#2a3b44] text-white p-3 rounded flex justify-between items-center">
-        <span class="font-medium">{{ group.name }}</span>
-       
-      </a>
-    {% empty %}
-      <p class="text-gray-400 text-sm">No group chats yet.</p>
-    {% endfor %}
-  </div>
-</div>
-
-
-
-
-    </div>
-
-
-
-
-
-
-  </div>
-
-<div id="chat-window" class="flex-1 flex flex-col">
-  <!-- Chat Header -->
-  <div class="flex items-center justify-between p-4 bg-[#202c33] text-white">
-    <div class="flex items-center">
-      {% if other_user.profile_image %}
-        <img id="chat-avatar" src="{{ other_user.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
-      {% else %}
-        <div class="w-10 h-10 rounded-full bg-gray-500 mr-3"></div>
-      {% endif %}
-      <div>
-        <p id="chat-username" class="font-medium">{{ other_user.name }}</p>
-        <p id="chat-userphone" class="text-xs text-gray-400">{{ other_user.phone }}</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Messages -->
-  <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-[#0b141a]">
-    {% for msg in messages %}
-      {% if msg.sender.id == current_user.id %}
-        <div class="text-right">
-          <p class="inline-block p-2 rounded-2xl text-sm bg-green-500 text-white">{{ msg.content }}</p>
-        </div>
-      {% else %}
-        <div class="text-left flex items-start space-x-2">
-          {% if msg.sender.profile_image %}
-            <img src="{{ msg.sender.profile_image.url }}" class="w-6 h-6 rounded-full" />
-          {% else %}
-            <div class="w-6 h-6 rounded-full bg-gray-500"></div>
-          {% endif %}
-          <p class="inline-block p-2 rounded-2xl text-sm bg-gray-700 text-white">{{ msg.content }}</p>
-        </div>
-      {% endif %}
-    {% endfor %}
-  </div>
-
-  <!-- Input -->
-  <div class="p-4 bg-[#202c33] flex items-center">
-    <input id="chat-input" type="text"
-           placeholder="Type a message"
-           class="flex-1 px-3 py-2 rounded-full bg-[#111b21] text-white border-none focus:ring-0 text-sm" />
-    <button id="sendBtn" class="ml-3 bg-green-500 px-4 py-2 rounded-full text-white">Send</button>
-  </div>
-</div>
-
-
-        <!-- Modal Overlay -->
-<div id="groupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-  <div class="bg-[#250f1e] rounded-lg w-96 p-6 mx-2 max-h-[90vh] overflow-y-auto">
-    <h2 class="text-xl font-bold mb-4">Create New Group</h2>
-    <form method="POST">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="create_group">
-
-      <label class="block mb-2 font-semibold">Group Name:</label>
-      <input type="text" name="group_name" class="border p-2 rounded w-full mb-4" placeholder="Enter group name" required>
-
-      <label class="block mb-2 font-semibold">Add Members:</label>
-      <select name="members" multiple class="border p-2 rounded w-full mb-4">
+      <div id="user-list" class="flex-1 overflow-y-auto">
         {% for user in users %}
-        <option value="{{ user.id }}">{{ user.name }}</option>
+        <div class="p-3 flex items-center hover:bg-[#202c33] cursor-pointer">
+          <a href="{% url 'chat_room' user.id %}" class="flex items-center w-full">
+            {% if user.profile_image %}
+            <img src="{{ user.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
+            {% else %}
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white border border-white font-bold mr-3">
+              {% if user.id == current_user.id %}M{% else %}{{ user.name|first|upper }}{% endif %}
+            </div>
+            {% endif %}
+            <div>
+              <p class="font-medium">{% if user.id == current_user.id %}Me{% else %}{{ user.name }}{% endif %}</p>
+              <p class="text-gray-400 text-sm">{{ user.phone }}</p>
+            </div>
+          </a>
+        </div>
         {% endfor %}
-      </select>
-
-      <div class="flex justify-end space-x-2">
-        <button type="button" id="closeModal" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
-        <button type="submit" class="bg-[#03314d] text-white px-4 py-2 rounded hover:bg-[#4f595f]">Create</button>
       </div>
-    </form>
+
+      <!-- Groups -->
+      <div class="mt-6">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="font-semibold text-lg text-white">Groups</h3>
+          <button id="openModal" class="text-white hover:text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+          </button>
+        </div>
+        <div class="space-y-2 overflow-y-auto max-h-64">
+          {% for group in groups %}
+          <a href="{% url 'group_chat_view' group.id %}" class="block bg-[#202c33] hover:bg-[#2a3b44] text-white p-3 rounded flex justify-between items-center">
+            <span class="font-medium">{{ group.name }}</span>
+          </a>
+          {% empty %}
+          <p class="text-gray-400 text-sm">No group chats yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Chat Window -->
+  <div id="chat-window" class="flex-1 flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between p-4 bg-[#202c33] text-white">
+      <div class="flex items-center">
+        {% if other_user.profile_image %}
+        <img id="chat-avatar" src="{{ other_user.profile_image.url }}" class="w-10 h-10 rounded-full mr-3" />
+        {% else %}
+        <div class="w-10 h-10 rounded-full bg-gray-500 mr-3"></div>
+        {% endif %}
+        <div>
+          <p id="chat-username" class="font-medium">{{ other_user.name }}</p>
+          <p id="chat-userphone" class="text-xs text-gray-400">{{ other_user.phone }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-[#0b141a]">
+      {% for msg in messages %}
+      {% if msg.sender.id == current_user.id %}
+      <div class="text-right">
+        <p class="inline-block p-2 rounded-2xl text-sm bg-green-500 text-white">{{ msg.content }}</p>
+      </div>
+      {% else %}
+      <div class="text-left flex items-start space-x-2">
+        {% if msg.sender.profile_image %}
+        <img src="{{ msg.sender.profile_image.url }}" class="w-6 h-6 rounded-full" />
+        {% else %}
+        <div class="w-6 h-6 rounded-full bg-gray-500"></div>
+        {% endif %}
+        <p class="inline-block p-2 rounded-2xl text-sm bg-gray-700 text-white">{{ msg.content }}</p>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- Input -->
+    <div class="p-4 bg-[#202c33] flex items-center">
+      <input id="chat-input" type="text" placeholder="Type a message" class="flex-1 px-3 py-2 rounded-full bg-[#111b21] text-white border-none focus:ring-0 text-sm" />
+      <button id="sendBtn" class="ml-3 bg-green-500 px-4 py-2 rounded-full text-white">Send</button>
+    </div>
+  </div>
+
 </div>
 
 
-
-<!-- ✅ Modal JS -->
 <script>
-const openModal = document.getElementById('openModal');
-const closeModal = document.getElementById('closeModal');
-const modal = document.getElementById('groupModal');
+  // Sidebar toggle
+  document.querySelectorAll(".menu-toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.getElementById("sidebar").classList.toggle("-translate-x-full");
+    });
+  });
 
-openModal.addEventListener('click', () => modal.classList.remove('hidden'));
-closeModal.addEventListener('click', () => modal.classList.add('hidden'));
+  // Group modal toggle
+  const modal = document.getElementById('groupModal');
+  document.getElementById('openModal').addEventListener('click', () => modal.classList.remove('hidden'));
+  document.getElementById('closeModal').addEventListener('click', () => modal.classList.add('hidden'));
 </script>
 
-<script src="{% static 'js/admin.js' %}"></script>
+{% comment %} <script src="{% static 'js/admin.js' %}"></script> {% endcomment %}
 </body>
 
 </html>

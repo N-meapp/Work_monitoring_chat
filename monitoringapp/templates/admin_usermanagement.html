@@ -114,7 +114,9 @@ select:focus {
     }, 3000);
   </script>
 {% endif %}
-<div class="flex justify-center items-center mt-10 px-4">
+
+<div class="flex justify-center items-center mt-10 px-4 md:ml-[17rem] transition-all duration-300">
+
   <form method="POST" enctype="multipart/form-data" 
         class="border-2 border-[#250f1e] bg-transparent hover:text-black shadow-lg rounded-xl p-6 sm:p-8 w-full max-w-4xl">
     {% csrf_token %}
