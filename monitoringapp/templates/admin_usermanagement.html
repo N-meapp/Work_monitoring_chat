@@ -346,96 +346,97 @@ select:focus {
 
 
 <div id="editModal" class="fixed inset-0 hidden bg-black bg-opacity-50 flex items-center justify-center p-4">
-  <div class="bg-white text-black p-4 sm:p-6 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-    <h2 class="text-xl font-bold mb-4 text-black">Edit Employee</h2>
+  <div class="bg-gray-900 text-white p-4 sm:p-6 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+    <h2 class="text-xl font-bold mb-4">Edit Employee</h2>
     
     <form id="editForm" method="POST" enctype="multipart/form-data" 
           action="{% url 'edit_user' %}"
-          class="grid grid-cols-1 md:grid-cols-2 gap-6 !text-black">
+          class="grid grid-cols-1 md:grid-cols-2 gap-6">
       {% csrf_token %}
       <!-- Hidden field for ID -->
       <input type="hidden" id="edit_id" name="id">
 
       <div>
-        <label class="block mb-1 font-medium text-black">Employee ID</label>
+        <label class="block mb-1 font-medium">Employee ID</label>
         <input type="text" id="edit_emp_id" name="edit_emp_id" 
-               class="w-full border p-2 rounded bg-gray-100 !text-black" 
-               >
+               class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
       </div>
       <div>
-        <label class="block mb-1 font-medium text-black">Full Name</label>
-        <input type="text" id="edit_name" name="edit_name" class="w-full border p-2 rounded !text-black">
+        <label class="block mb-1 font-medium">Full Name</label>
+        <input type="text" id="edit_name" name="edit_name" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
       </div>
       <div>
-        <label class="block mb-1 font-medium text-black">Email</label>
-        <input type="email" id="edit_email" name="edit_email" class="w-full border p-2 rounded !text-black">
+        <label class="block mb-1 font-medium">Email</label>
+        <input type="email" id="edit_email" name="edit_email" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
       </div>
       <div>
-        <label class="block mb-1 font-medium text-black">Phone</label>
-        <input type="text" id="edit_phone" name="edit_phone" class="w-full border p-2 rounded !text-black">
+        <label class="block mb-1 font-medium">Phone</label>
+        <input type="text" id="edit_phone" name="edit_phone" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
       </div>
-      <div>
-  <label class="block mb-1 font-medium text-black">Department</label>
-  <select id="edit_department" name="edit_department" class="w-full border p-2 rounded !text-black">
-    {% for dept in departments %}
-      <option value="{{ dept.id }}">{{ dept.name }}</option>
-    {% endfor %}
-  </select>
-</div>
-
-<div>
-  <label class="block mb-1 font-medium text-black">Team</label>
-  <select id="edit_team" name="edit_team" class="w-full border p-2 rounded !text-black">
-    {% for team in teams %}
-      <option value="{{ team.id }}">{{ team.name }}</option>
-    {% endfor %}
-  </select>
-</div>
 
       <div>
-        <label class="block mb-1 font-medium text-black">Job Position</label>
-        <input type="text" id="edit_job_position" name="edit_job_position" class="w-full border p-2 rounded !text-black">
+        <label class="block mb-1 font-medium">Department</label>
+        <select id="edit_department" name="edit_department" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
+          {% for dept in departments %}
+            <option value="{{ dept.id }}">{{ dept.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block mb-1 font-medium">Team</label>
+        <select id="edit_team" name="edit_team" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
+          {% for team in teams %}
+            <option value="{{ team.id }}">{{ team.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block mb-1 font-medium">Job Position</label>
+        <input type="text" id="edit_job_position" name="edit_job_position" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
       </div>
       <div>
-        <label class="block mb-1 font-medium text-black">Designation</label>
-        <input type="text" id="edit_designation" name="edit_designation" class="w-full border p-2 rounded !text-black">
+        <label class="block mb-1 font-medium">Designation</label>
+        <input type="text" id="edit_designation" name="edit_designation" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
       </div>
       <div>
-        <label class="block mb-1 font-medium text-black">Work Location</label>
-        <input type="text" id="edit_work_location" name="edit_work_location" class="w-full border p-2 rounded !text-black">
+        <label class="block mb-1 font-medium">Work Location</label>
+        <input type="text" id="edit_work_location" name="edit_work_location" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
       </div>
       <div>
-        <label class="block mb-1 font-medium text-black">Joining Date</label>
-        <input type="date" id="edit_joining_date" name="edit_joining_date" class="w-full border p-2 rounded !text-black">
+        <label class="block mb-1 font-medium">Joining Date</label>
+        <input type="date" id="edit_joining_date" name="edit_joining_date" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
       </div>
       <div>
-        <label class="block mb-1 font-medium text-black">Username</label>
-        <input type="text" id="edit_username" name="edit_username" class="w-full border p-2 rounded !text-black">
+        <label class="block mb-1 font-medium">Username</label>
+        <input type="text" id="edit_username" name="edit_username" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
       </div>
       <div>
-        <label class="block mb-1 font-medium text-black">Password</label>
-        <input type="password" id="edit_password" name="edit_password" class="w-full border p-2 rounded !text-black">
+        <label class="block mb-1 font-medium">Password</label>
+        <input type="password" id="edit_password" name="edit_password" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
       </div>
       <div>
-        <label class="block mb-1 font-medium text-black">Status</label>
-        <select id="edit_status" name="edit_status" class="w-full border p-2 rounded !text-black">
+        <label class="block mb-1 font-medium">Status</label>
+        <select id="edit_status" name="edit_status" class="w-full border border-gray-700 p-2 rounded bg-gray-800 text-white">
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
       </div>
       <div>
-        <label class="block mb-1 font-medium text-black">Profile Image</label>
+        <label class="block mb-1 font-medium">Profile Image</label>
         <img id="edit_profile_image" src="" class="w-20 h-20 rounded-full mb-2">
-        <input type="file" id="edit_profile_upload" name="edit_profile_upload" class="w-full border p-2 rounded text-black">
+        <input type="file" id="edit_profile_upload" name="edit_profile_upload" class="w-full border border-gray-700 p-2 rounded text-white">
       </div>
 
       <div class="col-span-2 mt-4 flex justify-end">
-        <button type="button" onclick="closeEditModal()" class="bg-gray-400 px-4 py-2 rounded mr-2">Cancel</button>
+        <button type="button" onclick="closeEditModal()" class="bg-gray-600 px-4 py-2 rounded mr-2">Cancel</button>
         <button type="submit" class="bg-[#250f1e] text-white px-4 py-2 rounded">Save</button>
       </div>
     </form>
   </div>
 </div>
+
 <script>
 function openEditModal(button) {
   document.getElementById("edit_id").value = button.dataset.id;
