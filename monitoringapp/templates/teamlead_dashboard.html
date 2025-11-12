@@ -27,7 +27,7 @@
 </style>
 
 </head>
-<body class="bg-black text-white font-sans select-none">
+<body class="bg-black  font-sans select-none">
 
 <div id="sidebar" 
      class="fixed top-0 left-0 h-full w-64 bg-[#250f1e] overflow-y-auto text-white p-6 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
@@ -315,37 +315,81 @@
     </form>
   </div>
 
+<form id="filterForm" class="border border-[#250f1e] p-6 rounded-lg shadow-md mb-8 overflow-x-auto mt-20">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
+    <h2 class="text-xl font-semibold text-white">Team Members</h2>
 
-  <div class="border border-[#250f1e] p-6 rounded-lg shadow-md mb-8 overflow-x-auto mt-20">
-  <h2 class="text-xl font-semibold mb-4">Team Members</h2>
-  <table class="w-full border-collapse border border-gray-200">
-    <thead>
+    <div class="flex flex-wrap gap-3 items-center">
+      <!-- Search -->
+      <input
+        type="text"
+        name="search"
+        value="{{ request.GET.search }}"
+        placeholder="Search by name or email"
+        class="border border-[#3a1f2f] bg-[#1a0b14] text-white px-3 py-2 rounded-lg w-48 focus:outline-none focus:ring-2 focus:ring-[#a84c84]"
+      />
+
+      <!-- Department -->
+      <div class="custom-select">
+        <select name="department" class="select-dark">
+          <option value="">All Departments</option>
+          {% for dept in departments %}
+            <option value="{{ dept }}" {% if request.GET.department == dept %}selected{% endif %}>{{ dept }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Team -->
+      <div class="custom-select">
+        <select name="team" class="select-dark">
+          <option value="">All Teams</option>
+          {% for t in teams %}
+            <option value="{{ t }}" {% if request.GET.team == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Position -->
+      <div class="custom-select">
+        <select name="position" class="select-dark">
+          <option value="">All Positions</option>
+          {% for p in positions %}
+            <option value="{{ p }}" {% if request.GET.position == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🧾 Table -->
+  <table class="w-full border-collapse border border-gray-700">
+    <thead class="bg-[#150812] text-white">
       <tr>
-        <th class="border p-2 text-left">Name</th>
-        <th class="border p-2 text-left">Email</th>
-        <th class="border p-2 text-left">Role</th>
-        <th class="border p-2 text-left">Job Position</th>
-        <th class="border p-2 text-left">Status</th>
-        <th class="border p-2 text-left">Last Login</th> <!-- ✅ -->
+        <th class="border border-gray-700 p-2 text-left">Name</th>
+        <th class="border border-gray-700 p-2 text-left">Email</th>
+        <th class="border border-gray-700 p-2 text-left">Department</th>
+        <th class="border border-gray-700 p-2 text-left">Team</th>
+        <th class="border border-gray-700 p-2 text-left">Position</th>
+        <th class="border border-gray-700 p-2 text-left">Status</th>
+        <th class="border border-gray-700 p-2 text-left">Last Login</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="teamTableBody">
       {% for member in team_members %}
-      <tr>
-        <td class="border p-2">{{ member.name }}</td>
-        <td class="border p-2">{{ member.email }}</td>
-        <td class="border p-2">{{ member.designation }}</td> 
-        <td class="border p-2">{{ member.job_Position }}</td>   
-        <td class="border p-2">
-  {% if member.status == "active" %}
-   <span class="text-green-600 font-semibold">Active</span>
-{% else %}
-   <span class="text-red-500 font-semibold">Inactive</span>
-{% endif %}
-
-</td>
-
-        <td class="border p-2">
+      <tr class="hover:bg-[#2b1322] transition">
+        <td class="border border-gray-700 p-2 text-white">{{ member.name }}</td>
+        <td class="border border-gray-700 p-2 text-white">{{ member.email }}</td>
+        <td class="border border-gray-700 p-2 text-white">{{ member.department.name }}</td>
+        <td class="border border-gray-700 p-2 text-white">{{ member.team.name }}</td>
+        <td class="border border-gray-700 p-2 text-white">{{ member.job_Position }}</td>
+        <td class="border border-gray-700 p-2 text-white">
+          {% if member.status == "active" %}
+            <span class="text-green-400 font-semibold">Active</span>
+          {% else %}
+            <span class="text-red-400 font-semibold">Inactive</span>
+          {% endif %}
+        </td>
+        <td class="border border-gray-700 p-2 text-white">
           {% if member.last_login_time %}
             {{ member.last_login_time|date:"d M Y, h:i A" }}
           {% else %}
@@ -355,18 +399,96 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="6" class="text-center text-gray-500">No team members found</td>
+        <td colspan="7" class="text-center text-gray-400 py-4">No team members found</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
-</div>
+</form>
 
+<style>
+  /* Base dark select */
+  .select-dark {
+    background-color: #1a0b14;
+    color: white;
+    border: 1px solid #3a1f2f;
+    border-radius: 0.5rem;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 180px;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
 
+  /* Custom arrow */
+  .custom-select {
+    position: relative;
+  }
+  .custom-select::after {
+    content: "▼";
+    font-size: 0.75rem;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a84c84;
+    pointer-events: none;
+  }
 
+  /* Option list styling */
+  .select-dark option {
+    background-color: #1a0b14 !important;
+    color: white !important;
+  }
 
+  .select-dark:hover,
+  .select-dark:focus {
+    border-color: #a84c84;
+    outline: none;
+  }
 
-</div>
+  /* Prevent white hover */
+  select.select-dark:focus option:checked,
+  select.select-dark option:hover {
+    background-color: #3a1f2f !important;
+    color: white !important;
+  }
+</style>
+
+<!-- ⚡ AJAX Filtering -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const filterForm = document.getElementById("filterForm");
+  const tableBody = document.getElementById("teamTableBody");
+
+  filterForm.querySelectorAll("input, select").forEach((el) => {
+    el.addEventListener("input", applyFilters);
+    el.addEventListener("change", applyFilters);
+  });
+
+  function applyFilters() {
+    const formData = new FormData(filterForm);
+    const params = new URLSearchParams(formData).toString();
+
+    fetch(`?${params}`, {
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+    })
+      .then((res) => res.text())
+      .then((html) => {
+        const parser = new DOMParser();
+        const newBody = parser
+          .parseFromString(html, "text/html")
+          .querySelector("#teamTableBody");
+        if (newBody) tableBody.innerHTML = newBody.innerHTML;
+      })
+      .catch((err) => console.error("AJAX Filter Error:", err));
+  }
+});
+</script>
+
 
 
 <script src="{% static 'js/admin.js' %}"></script>
