@@ -1019,14 +1019,14 @@ def group_chat_view(request, group_id):
 def teammember_dashboard(request):
     # ❌ Redirect if not logged in or invalid session
     if not request.session.get("user_id") or request.session.get("position") != "team_member":
-        return redirect("login")
+        return redirect("login_view")
 
     # ✅ Fetch logged-in team member
     try:
         team_member = User.objects.get(id=request.session['user_id'])
     except User.DoesNotExist:
         request.session.flush()
-        return redirect("login")
+        return redirect("login_view")
 
     team_name = team_member.team
 
@@ -1129,8 +1129,8 @@ def teammember_dashboard(request):
     )
 
     announcements = Announcement.objects.filter(
-    created_by__team=team_member.team,
-    created_at__gte=now() - timedelta(hours=12)
+        created_by__team=team_member.team,
+        created_at__gte=now() - timedelta(hours=12)
     ).order_by('-created_at')
 
     # 🧭 Render dashboard
@@ -1780,25 +1780,31 @@ def teamlead_logout(request):
     response["Expires"] = "0"
     return response
 
-
+@never_cache
 def teammember_logout(request):
     if "user_id" in request.session:
         try:
             user = User.objects.get(id=request.session["user_id"])
             user.status = "inactive"
             user.last_logout_time = timezone.now()
+
+            # Set user inactive if applicable
             if hasattr(user, "is_active"):
                 try:
                     setattr(user, "is_active", False)
                 except Exception:
                     pass
+
             user.save()
         except User.DoesNotExist:
             pass
 
-    # ✅ Clear session fully
+    # Clear session
     request.session.flush()
 
-    # ✅ Redirect to index (not login page)
-    return redirect("index")
-
+    # Redirect with no-cache protection (same as teamlead)
+    response = redirect("index")
+    response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response["Pragma"] = "no-cache"
+    response["Expires"] = "0"
+    return response
