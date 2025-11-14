@@ -267,10 +267,60 @@ select:focus {
 
 
 
-
 <div class="container mx-auto p-4 sm:p-6 lg:ml-[18rem] mt-6 lg:mt-10">
   <h2 class="text-xl sm:text-2xl font-bold mb-4 text-white">Employee List</h2>
 
+  <!-- 🔍 FILTER FORM -->
+  <form id="filterForm" class="border border-[#250f1e] p-6 rounded-lg shadow-md mb-8 overflow-x-auto pr-20">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
+      <h3 class="text-lg font-semibold text-white">Filters</h3>
+      <div class="flex flex-wrap gap-3 items-center">
+        <!-- Search -->
+        <input
+          type="text"
+          name="search"
+          value="{{ request.GET.search }}"
+          placeholder="Search by name, email, or emp ID"
+          class="border border-[#3a1f2f] bg-[#1a0b14] text-white px-3 py-2 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-[#a84c84]"
+        />
+
+        <!-- Department -->
+        <div class="custom-select">
+          <select name="department" class="select-dark">
+            <option value="">All Departments</option>
+            {% for dept in departments %}
+              <option value="{{ dept.name }}" {% if request.GET.department == dept.name %}selected{% endif %}>{{ dept.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Team -->
+        <div class="custom-select">
+          <select name="team" class="select-dark">
+            <option value="">All Teams</option>
+            {% for t in teams %}
+              <option value="{{ t.name }}" {% if request.GET.team == t.name %}selected{% endif %}>{{ t.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Job Position -->
+        <div class="custom-select">
+          <select name="position" class="select-dark">
+            <option value="">All Positions</option>
+            {% for p in job_positions %}
+  {% if p %}
+    <option value="{{ p }}" {% if request.GET.position == p %}selected{% endif %}>{{ p }}</option>
+  {% endif %}
+{% endfor %}
+
+          </select>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- 🧾 EMPLOYEE TABLE -->
   <div class="overflow-x-auto max-w-5xl border border-gray-300 rounded-lg">
     <table class="min-w-[1200px] border-collapse border text-sm text-white">
       <thead class="bg-gray-200 text-black">
@@ -291,7 +341,7 @@ select:focus {
           <th class="p-2 border whitespace-nowrap">Actions</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="employeeTableBody">
         {% for user in users %}
         <tr class="hover:bg-gray-700">
           <td class="p-2 border whitespace-nowrap">
@@ -336,11 +386,73 @@ select:focus {
             <a href="{% url 'delete_user' user.id %}" class="bg-red-500 text-white px-3 py-1 rounded">Delete</a>
           </td>
         </tr>
+        {% empty %}
+        <tr>
+          <td colspan="14" class="text-center text-gray-400 py-4">No users found</td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
+<!-- 🎨 Styles -->
+<style>
+  .select-dark {
+    background-color: #1a0b14;
+    color: white;
+    border: 1px solid #3a1f2f;
+    border-radius: 0.5rem;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+    appearance: none;
+    width: 180px;
+  }
+  .custom-select { position: relative; }
+  .custom-select::after {
+    content: "▼";
+    font-size: 0.75rem;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a84c84;
+    pointer-events: none;
+  }
+</style>
+
+<!-- ⚡ AJAX Filtering -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const filterForm = document.getElementById("filterForm");
+  const tableBody = document.getElementById("employeeTableBody");
+
+  filterForm.querySelectorAll("input, select").forEach((el) => {
+    el.addEventListener("input", applyFilters);
+    el.addEventListener("change", applyFilters);
+  });
+
+  function applyFilters() {
+    const formData = new FormData(filterForm);
+    const params = new URLSearchParams(formData).toString();
+
+    fetch(`?${params}`, {
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+    })
+      .then((res) => res.text())
+      .then((html) => {
+        const parser = new DOMParser();
+        const newBody = parser
+          .parseFromString(html, "text/html")
+          .querySelector("#employeeTableBody");
+        if (newBody) tableBody.innerHTML = newBody.innerHTML;
+      })
+      .catch((err) => console.error("AJAX Filter Error:", err));
+  }
+});
+</script>
+
 
 
 

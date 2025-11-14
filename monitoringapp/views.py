@@ -104,6 +104,13 @@ def admin_usermanagement(request):
     users = User.objects.all()
     departments = Department.objects.all()
     teams = Team.objects.all()
+    job_positions = (
+        User.objects.exclude(job_Position__isnull=True)
+        .exclude(job_Position__exact="")
+        .values_list('job_Position', flat=True)
+        .distinct()
+        .order_by('job_Position')
+    )
 
     if request.method == "POST":
         user_id = request.POST.get("id")  # for edit (None for new user)
@@ -126,18 +133,18 @@ def admin_usermanagement(request):
         department = Department.objects.get(id=department_id) if department_id else None
         team = Team.objects.get(id=team_id) if team_id else None
 
-        # Helper function for uniqueness check
+        # Helper for uniqueness validation
         def check_unique(field_name, value):
             qs = User.objects.filter(**{field_name: value})
             if user_id:
                 qs = qs.exclude(id=user_id)
             return qs.exists()
 
-        # =============== EDIT EXISTING USER ===============
+        # ========== EDIT EXISTING USER ==========
         if user_id:
             user = get_object_or_404(User, id=user_id)
 
-            # Uniqueness validation
+            # Uniqueness checks
             if check_unique("employee_id", employee_id):
                 messages.error(request, "⚠️ Employee ID already exists for another user.")
                 return redirect("admin_usermanagement")
@@ -148,7 +155,7 @@ def admin_usermanagement(request):
                 messages.error(request, "⚠️ Email already exists for another user.")
                 return redirect("admin_usermanagement")
 
-            # Update user details
+            # Update details
             user.name = name
             user.employee_id = employee_id
             user.email = email
@@ -179,9 +186,8 @@ def admin_usermanagement(request):
                 messages.error(request, f"⚠️ Cannot update user. Unique field conflict ({str(e)})")
                 return redirect("admin_usermanagement")
 
-        # =============== CREATE NEW USER ===============
+        # ========== CREATE NEW USER ==========
         else:
-            # Uniqueness validation
             if check_unique("employee_id", employee_id):
                 messages.error(request, "⚠️ Employee ID already exists. Please choose another one.")
                 return redirect("admin_usermanagement")
@@ -192,7 +198,6 @@ def admin_usermanagement(request):
                 messages.error(request, "⚠️ Email already exists. Please choose another one.")
                 return redirect("admin_usermanagement")
 
-            # Safe creation
             try:
                 User.objects.create(
                     name=name,
@@ -215,16 +220,41 @@ def admin_usermanagement(request):
                 messages.error(request, f"⚠️ Cannot create user. Unique field conflict ({str(e)})")
                 return redirect("admin_usermanagement")
 
-        # Redirect after POST to show messages
         return redirect("admin_usermanagement")
 
-    # =============== GET REQUEST ===============
+    # =======================================================
+    # ===============   GET REQUEST (FILTERS)   =============
+    # =======================================================
+
+    search = request.GET.get("search", "").strip()
+    department_filter = request.GET.get("department", "")
+    team_filter = request.GET.get("team", "")
+    position_filter = request.GET.get("position", "")
+
+    if search:
+        users = users.filter(
+            Q(name__icontains=search) |
+            Q(email__icontains=search) |
+            Q(employee_id__icontains=search)
+        )
+
+    if department_filter:
+        users = users.filter(department__name=department_filter)
+
+    if team_filter:
+        users = users.filter(team__name=team_filter)
+
+    if position_filter:
+        users = users.filter(job_Position=position_filter)
+
     context = {
         "users": users,
         "departments": departments,
         "teams": teams,
+        "job_positions": job_positions,
     }
     return render(request, "admin_usermanagement.html", context)
+
 
 def edit_user(request):
     if request.method == "POST":
