@@ -57,11 +57,20 @@ def admin_login(request):
     return render(request, 'admin_login.html')
 
 def admin_logout(request):
+    logout(request)
     request.session.flush()
-    return redirect("index")   
+    return redirect("index")
+from django.views.decorators.cache import cache_control
 
+def no_cache(view_func):
+    return cache_control(
+        no_cache=True,
+        no_store=True,
+        must_revalidate=True,
+        max_age=0
+    )(view_func)
 
-@never_cache
+@no_cache
 def admin_dashboard(request):
     # Check superuser OR management session
     if (request.user.is_authenticated and request.user.is_superuser) or \
